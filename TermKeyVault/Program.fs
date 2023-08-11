@@ -1,5 +1,6 @@
 ﻿open Terminal.Gui
 open System.Data
+open FSharp.Data
 
 let loginWindow =
     new Window(
@@ -12,7 +13,7 @@ let loginWindow =
 
 let mainWindow = 
     new Window(
-        Title = "Hedgehog",
+        Title = "TermKeyVault",
         X = 0,
         Y = 0,
         Width = Dim.Fill(),
