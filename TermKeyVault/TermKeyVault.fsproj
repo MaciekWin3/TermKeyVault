@@ -16,10 +16,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Cryptography.fs" />
+    <Compile Include="Repo.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
     <PackageReference Include="Terminal.Gui" Version="1.13.5" />
   </ItemGroup>
 

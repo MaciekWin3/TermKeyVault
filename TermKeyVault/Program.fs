@@ -1,6 +1,7 @@
-﻿open Terminal.Gui
+﻿module Program
+open Repo
+open Terminal.Gui
 open System.Data
-open FSharp.Data
 
 let loginWindow =
     new Window(
@@ -15,42 +16,92 @@ let mainWindow =
     new Window(
         Title = "TermKeyVault",
         X = 0,
-        Y = 0,
+        Y = 1,
         Width = Dim.Fill(),
         Height = Dim.Fill()
     )
 
-let table = 
+let categoryTable = 
     new TableView(
         X = 0,
         Y = 0,
-        Width = Dim.Fill(),
-        Height = Dim.Fill(),
+        Width = Dim.Percent(25f),
+        Height = Dim.Percent(70f),
         FullRowSelect = true
     )
 
-type record = {
-    Name: string
-    Description: string
-} 
+categoryTable.Style.AlwaysShowHeaders <- true
 
-// init list of record
-let x = {Name = "GitHub"; Description = "P@ssword"}
-let y = {Name = "Facebook"; Description = "P@ssword"}
+let recordTable = 
+    new TableView(
+        X = Pos.Right(categoryTable),
+        Y = 0,
+        Width = Dim.Percent(75f),
+        Height = Dim.Percent(70f),
+        FullRowSelect = true
+    )
 
-let list = [x; y]
+let frameView = 
+    new FrameView(
+        X = 0,
+        Y = Pos.Bottom(categoryTable),
+        Width = Dim.Fill(),
+        Height = Dim.Fill(),
+        Title = "Details"
+    )
+
+recordTable.Style.AlwaysShowHeaders <- true
 
 let convertListToDataTable(list: List<record>) =
     let table = new DataTable()
-    table.Columns.Add("Name") |> ignore
-    table.Columns.Add("Description") |> ignore
+    table.Columns.Add("Title") |> ignore
+    table.Columns.Add("Username") |> ignore
+    table.Columns.Add("Password") |> ignore
+    table.Columns.Add("Category") |> ignore
+    table.Columns.Add("Url") |> ignore
+    table.Columns.Add("Notes") |> ignore
     list |> List.iter (fun item -> 
         let row = table.NewRow()
-        row.[0] <- item.Name
-        row.[1] <- item.Description
+        row.[0] <- item.Title
+        row.[1] <- item.Username
+        row.[2] <- item.Password
+        row.[3] <- item.Category
+        row.[4] <- item.Url
+        row.[5] <- item.Notes
         table.Rows.Add(row) |> ignore
     )
     table
+
+let convertListToDataTableCategory(list: List<record>) =
+    let table = new DataTable()
+    table.Columns.Add("Category") |> ignore
+    list |> List.iter (fun item -> 
+        let row = table.NewRow()
+        row.[0] <- item.Category
+        table.Rows.Add(row) |> ignore
+    )
+    table
+let openFileDialog() = 
+    // make it cross platform
+    let dialog = new OpenDialog("Open", "Open a file")
+    dialog.DirectoryPath <- "/home"
+    Application.Run dialog |> ignore
+    dialog.FilePath |> ignore
+
+
+let menu = 
+    new MenuBar(
+        [|
+            MenuBarItem ("File",
+                [| MenuItem ("Open", "", (fun () -> openFileDialog())) 
+                   MenuItem ("Create", "", (fun () -> Application.RequestStop ())) |]);
+            MenuBarItem ("Edit",
+                [| MenuItem ("Copy", "", Unchecked.defaultof<_>)
+                   MenuItem ("Cut", "", Unchecked.defaultof<_>)
+                   MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
+        |])
+
+
 
 let action (e: TableView.CellActivatedEventArgs) = 
     let row = e.Row
@@ -64,14 +115,20 @@ let action (e: TableView.CellActivatedEventArgs) =
         MessageBox.Query("Test", "Test")
         |> ignore
 
-table.add_CellActivated(action)
-table.Table <- convertListToDataTable(list)
+recordTable.add_CellActivated(action)
+recordTable.Table <- convertListToDataTable(Repo.returnTestData())
+categoryTable.Table <- convertListToDataTableCategory(Repo.returnTestData())
 
-mainWindow.Add(table)
+mainWindow.Add(categoryTable)
+mainWindow.Add(recordTable)
+mainWindow.Add(frameView)
 
 [<EntryPoint>]
 let initApp _ = 
+    Repo.createDb()
     Application.Init()
-    Application.Run(mainWindow)
+    Application.Top.Add(mainWindow)
+    Application.Top.Add(menu)
+    Application.Run()
     Application.Shutdown();
     0 
