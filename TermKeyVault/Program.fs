@@ -41,7 +41,7 @@ let recordTable =
         FullRowSelect = true
     )
 
-let frameView = 
+let frameView =
     new FrameView(
         X = 0,
         Y = Pos.Bottom(categoryTable),
@@ -81,6 +81,7 @@ let convertListToDataTableCategory(list: List<record>) =
         table.Rows.Add(row) |> ignore
     )
     table
+
 let openFileDialog() = 
     // make it cross platform
     let dialog = new OpenDialog("Open", "Open a file")
@@ -95,10 +96,12 @@ let menu =
             MenuBarItem ("File",
                 [| MenuItem ("Open", "", (fun () -> openFileDialog())) 
                    MenuItem ("Create", "", (fun () -> Application.RequestStop ())) |]);
-            MenuBarItem ("Edit",
-                [| MenuItem ("Copy", "", Unchecked.defaultof<_>)
-                   MenuItem ("Cut", "", Unchecked.defaultof<_>)
+            MenuBarItem ("Tools",
+                [| MenuItem ("Password generator", "", Unchecked.defaultof<_>)
                    MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
+            MenuBarItem ("Help",
+                [| MenuItem ("About", "", Unchecked.defaultof<_>)
+                   MenuItem ("Website", "", Unchecked.defaultof<_>) |])
         |])
 
 
@@ -115,9 +118,35 @@ let action (e: TableView.CellActivatedEventArgs) =
         MessageBox.Query("Test", "Test")
         |> ignore
 
+
+let showContextMenu(screenPoint: Point, id: string) = 
+    let contextMenu = new ContextMenu(0,0,
+        MenuBarItem ("File",
+            [| 
+                MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
+                MenuItem ("Edit", "", (fun () -> Application.RequestStop ()))
+            |]))
+
+    contextMenu.Show() 
+
 recordTable.add_CellActivated(action)
 recordTable.Table <- convertListToDataTable(Repo.returnTestData())
+recordTable.add_MouseClick(fun e -> 
+    if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
+        recordTable.SetSelection(1, e.MouseEvent.Y - 3, false);
+        try
+            let id = string recordTable.Table.Rows[e.MouseEvent.Y - 3].[0]
+            showContextMenu(Point(e.MouseEvent.X + recordTable.Frame.X + 5, e.MouseEvent.Y + recordTable.Frame.Y + 5), id)
+        with
+        | _ -> ()
+)
 categoryTable.Table <- convertListToDataTableCategory(Repo.returnTestData())
+
+recordTable.add_SelectedCellChanged(fun e -> 
+    let row = e.NewRow
+    let name = e.Table.Rows[row][0]
+    frameView.Text <- name.ToString()
+)
 
 mainWindow.Add(categoryTable)
 mainWindow.Add(recordTable)
