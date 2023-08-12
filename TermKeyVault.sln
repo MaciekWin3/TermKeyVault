@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TermKeyVault", "TermKeyVault\TermKeyVault.fsproj", "{F9EBFBF2-4C95-4436-BBCA-E9F80821DAEA}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TermKeyVault", "TermKeyVault\TermKeyVault.fsproj", "{F9EBFBF2-4C95-4436-BBCA-E9F80821DAEA}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TermKeyVault.Tests", "TermKeyVault.Tests\TermKeyVault.Tests.fsproj", "{43946D56-FCBC-4B50-A290-5864907F54C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{F9EBFBF2-4C95-4436-BBCA-E9F80821DAEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9EBFBF2-4C95-4436-BBCA-E9F80821DAEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9EBFBF2-4C95-4436-BBCA-E9F80821DAEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43946D56-FCBC-4B50-A290-5864907F54C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43946D56-FCBC-4B50-A290-5864907F54C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43946D56-FCBC-4B50-A290-5864907F54C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43946D56-FCBC-4B50-A290-5864907F54C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
