@@ -3,6 +3,8 @@
 open Terminal.Gui
 open System.Data
 open Types
+open System
+open Repo
 
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
@@ -50,27 +52,9 @@ let openFileDialog() =
     Application.Run dialog |> ignore
     dialog.FilePath |> ignore
 
-let showRecordDialog() = 
-    let dialog = new Dialog("Add record", 60, 20)
-    Application.Run(dialog) 
 
-(* MenuBar *)
-let menu = 
-    new MenuBar(
-        [|
-            MenuBarItem ("File",
-                [| MenuItem ("Open", "", (fun () -> openFileDialog())) 
-                   MenuItem ("Create", "", (fun () -> Application.RequestStop ())) |]);
-            MenuBarItem ("Tools",
-                [| MenuItem ("Password generator", "", Unchecked.defaultof<_>)
-                   MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
-            MenuBarItem ("Records",
-                [| MenuItem ("Add record", "", (fun () -> showRecordDialog()))
-                   MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
-            MenuBarItem ("Help",
-                [| MenuItem ("About", "", Unchecked.defaultof<_>)
-                   MenuItem ("Website", "", Unchecked.defaultof<_>) |])
-        |])
+
+
 
 (* Context Menu *)
 let showContextMenu(screenPoint: Point, id: string) = 
@@ -135,6 +119,142 @@ let recordTable =
         frameView.Text <- name.ToString()
     )
     table
+
+let showRecordDialog() = 
+    let dialog = new Dialog("Add record", 60, 20)
+
+    let record = {
+        Title = ""
+        Username = ""
+        Password = ""
+        Url = ""
+        Notes = ""
+        Category = ""
+        CreationDate = DateTime.Now 
+        LastModifiedDate = DateTime.Now 
+    }
+
+    (* Title *)
+    let titleLabel = new Label(
+        Text = "Title: ",
+        X = 0,
+        Y = 1
+    )
+
+    let titleTextField = new TextField(
+        Text = record.Title,
+        X = Pos.Right(titleLabel),
+        Y = Pos.Top(titleLabel),
+        Width = Dim.Fill()
+    )
+
+    let usernameLabel = new Label(
+        Text = "Username: ",
+        X = 0,
+        Y = Pos.Bottom(titleLabel)
+    )
+
+    let usernameTextField = new TextField(
+        Text = record.Username,
+        X = Pos.Right(usernameLabel),
+        Y = Pos.Top(usernameLabel),
+        Width = Dim.Fill()
+    )
+
+    let passwordLabel = new Label(
+        Text = "Password: ",
+        X = 0,
+        Y = Pos.Bottom(usernameLabel)
+    )
+
+    let passwordTextField = new TextField(
+        Text = record.Password,
+        X = Pos.Right(passwordLabel),
+        Y = Pos.Top(passwordLabel),
+        Width = Dim.Fill()
+    )
+
+    let urlLabel = new Label(
+        Text = "Url: ",
+        X = 0,
+        Y = Pos.Bottom(passwordLabel)
+    )
+
+    let urlTextField = new TextField(
+        Text = record.Url,
+        X = Pos.Right(urlLabel),
+        Y = Pos.Top(urlLabel),
+        Width = Dim.Fill()
+    )
+
+    let notesLabel = new Label(
+        Text = "Notes: ",
+        X = 0,
+        Y = Pos.Bottom(urlLabel)
+    )
+
+    let notesTextField = new TextField(
+        Text = record.Notes,
+        X = Pos.Right(notesLabel),
+        Y = Pos.Top(notesLabel),
+        Width = Dim.Fill()
+    )
+
+    dialog.Add(titleLabel, titleTextField,
+               usernameLabel, usernameTextField,
+               passwordLabel, passwordTextField,
+               urlLabel, urlTextField,
+               notesLabel, notesTextField)
+
+    (* Exit button *)
+    let exitButton = new Button("Exit", true)
+    exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
+
+    (* Create button *)
+    let createButton = new Button("Create", true)
+    createButton.add_Clicked(fun _ -> 
+
+        let updatedRecord = {
+            record with
+                Title = titleTextField.Text.ToString()
+                Username = usernameTextField.Text.ToString()
+                Password = passwordTextField.Text.ToString()
+                Url = urlTextField.Text.ToString()
+                Notes = notesTextField.Text.ToString()
+                CreationDate = DateTime.Now
+                LastModifiedDate = DateTime.Now
+        }
+
+        createRecord(updatedRecord)
+        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
+        recordTable.Table <- convertListToDataTable(Repo.getRecords())
+
+        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
+        recordTable.Table <- convertListToDataTable(Repo.getRecords())
+        Application.RequestStop(dialog)
+    )
+
+    dialog.AddButton(createButton)
+    dialog.AddButton(exitButton)
+    Application.Run(dialog) 
+
+(* MenuBar *)
+let menu = 
+    new MenuBar(
+        [|
+            MenuBarItem ("File",
+                [| MenuItem ("Open", "", (fun () -> openFileDialog())) 
+                   MenuItem ("Create", "", (fun () -> Application.RequestStop ())) |]);
+            MenuBarItem ("Tools",
+                [| MenuItem ("Password generator", "", Unchecked.defaultof<_>)
+                   MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
+            MenuBarItem ("Records",
+                [| MenuItem ("Add record", "", (fun () -> showRecordDialog()))
+                   MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
+            MenuBarItem ("Help",
+                [| MenuItem ("About", "", Unchecked.defaultof<_>)
+                   MenuItem ("Website", "", Unchecked.defaultof<_>) |])
+        |])
 
 categoryTable.add_SelectedCellChanged(fun e -> 
     let row = e.NewRow
