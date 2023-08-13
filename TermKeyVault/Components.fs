@@ -45,7 +45,6 @@ let action (e: TableView.CellActivatedEventArgs) =
 
 
 let openFileDialog() = 
-    // make it cross platform
     let dialog = new OpenDialog("Open", "Open a file")
     dialog.DirectoryPath <- "/home"
     Application.Run dialog |> ignore
@@ -72,9 +71,6 @@ let menu =
                 [| MenuItem ("About", "", Unchecked.defaultof<_>)
                    MenuItem ("Website", "", Unchecked.defaultof<_>) |])
         |])
-
-
-
 
 (* Context Menu *)
 let showContextMenu(screenPoint: Point, id: string) = 
@@ -140,6 +136,11 @@ let recordTable =
     )
     table
 
+categoryTable.add_SelectedCellChanged(fun e -> 
+    let row = e.NewRow
+    let name = e.Table.Rows[row][0]
+    recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory(name.ToString()))
+)
 
 
 

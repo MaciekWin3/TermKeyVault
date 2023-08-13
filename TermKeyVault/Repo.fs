@@ -78,6 +78,33 @@ let getRecords() =
     connection.Close()
     records
 
+let getRecordsByCategory(category: string) = 
+    let dbFileName = "sample.db"
+    let connectionString = sprintf "Data Source=%s;Version=3;" dbFileName
+    let connection = new SQLiteConnection(connectionString)
+    connection.Open()
+
+    let query = sprintf "SELECT * FROM Records WHERE Category = '%s'" category
+    let command = new SQLiteCommand(query, connection)
+    let result = command.ExecuteReader()
+
+    let mutable records = []
+    while result.Read() do
+        let title = result.GetString(0)
+        let username = result.GetString(1)
+        let password = result.GetString(2)
+        let url = result.GetString(3)
+        let notes = result.GetString(4)
+        let category = result.GetString(5)
+        let date1 = result.GetString(6)
+        let creationDate = result.GetString(6)
+        let lastModifiedDate = result.GetString(7)
+        let record = {Title = title; Username = username; Password = password; Url = url; Notes = notes; Category = category; CreationDate = DateTime.Parse(creationDate); LastModifiedDate = DateTime.Parse(lastModifiedDate)}
+        records <- record :: records
+
+    connection.Close()
+    records
+
 let getCategories() =
     let dbFileName = "sample.db"
     let connectionString = sprintf "Data Source=%s;Version=3;" dbFileName
