@@ -24,12 +24,12 @@ let convertListToDataTable(list: List<Record>) =
     )
     table
 
-let convertListToDataTableCategory(list: List<Record>) =
+let convertListToDataTableCategory(list: List<string>) =
     let table = new DataTable()
     table.Columns.Add("Category") |> ignore
     list |> List.iter (fun item -> 
         let row = table.NewRow()
-        row.[0] <- item.Category
+        row.[0] <- item
         table.Rows.Add(row) |> ignore
     )
     table
@@ -51,6 +51,10 @@ let openFileDialog() =
     Application.Run dialog |> ignore
     dialog.FilePath |> ignore
 
+let showRecordDialog() = 
+    let dialog = new Dialog("Add record", 60, 20)
+    Application.Run(dialog) 
+
 (* MenuBar *)
 let menu = 
     new MenuBar(
@@ -61,15 +65,20 @@ let menu =
             MenuBarItem ("Tools",
                 [| MenuItem ("Password generator", "", Unchecked.defaultof<_>)
                    MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
+            MenuBarItem ("Records",
+                [| MenuItem ("Add record", "", (fun () -> showRecordDialog()))
+                   MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
             MenuBarItem ("Help",
                 [| MenuItem ("About", "", Unchecked.defaultof<_>)
                    MenuItem ("Website", "", Unchecked.defaultof<_>) |])
         |])
 
 
+
+
 (* Context Menu *)
 let showContextMenu(screenPoint: Point, id: string) = 
-    let contextMenu = new ContextMenu(0,0,
+    let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
         MenuBarItem ("File",
             [| 
                 MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
@@ -80,16 +89,16 @@ let showContextMenu(screenPoint: Point, id: string) =
 
 (* Category table *)
 let categoryTable = 
-    new TableView(
+    let table = new TableView(
         X = 0,
         Y = 0,
         Width = Dim.Percent(25f),
         Height = Dim.Percent(70f),
         FullRowSelect = true
     )
-
-categoryTable.Style.AlwaysShowHeaders <- true
-categoryTable.Table <- convertListToDataTableCategory(Repo.returnTestData())
+    table.Style.AlwaysShowHeaders <- true
+    table.Table <- convertListToDataTableCategory(Repo.getCategories())
+    table
 
 (* Deaitls frame *)
 let frameView =
@@ -103,33 +112,33 @@ let frameView =
 
 (* Record table *)
 let recordTable = 
-    new TableView(
+    let table = new TableView(
         X = Pos.Right(categoryTable),
         Y = 0,
         Width = Dim.Percent(75f),
         Height = Dim.Percent(70f),
         FullRowSelect = true
     )
+    table.Style.AlwaysShowHeaders <- true
+    table.add_CellActivated(action)
+    table.Table <- convertListToDataTable(Repo.getRecords())
+    table.add_MouseClick(fun e -> 
+        if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
+            table.SetSelection(1, e.MouseEvent.Y - 3, false);
+            try
+                let id = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
+                showContextMenu(Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), id)
+                e.Handled <- true
+            with
+            | _ -> ()
+    )
 
-recordTable.Style.AlwaysShowHeaders <- true
-recordTable.add_CellActivated(action)
-recordTable.Table <- convertListToDataTable(Repo.returnTestData())
-recordTable.add_MouseClick(fun e -> 
-    if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
-        recordTable.SetSelection(1, e.MouseEvent.Y - 3, false);
-        try
-            let id = string recordTable.Table.Rows[e.MouseEvent.Y - 3].[0]
-            showContextMenu(Point(e.MouseEvent.X + recordTable.Frame.X + 5, e.MouseEvent.Y + recordTable.Frame.Y + 5), id)
-            e.Handled <- true
-        with
-        | _ -> ()
-)
-
-recordTable.add_SelectedCellChanged(fun e -> 
-    let row = e.NewRow
-    let name = e.Table.Rows[row][0]
-    frameView.Text <- name.ToString()
-)
+    table.add_SelectedCellChanged(fun e -> 
+        let row = e.NewRow
+        let name = e.Table.Rows[row][0]
+        frameView.Text <- name.ToString()
+    )
+    table
 
 
 

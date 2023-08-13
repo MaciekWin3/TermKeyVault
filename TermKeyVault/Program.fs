@@ -7,6 +7,7 @@ open Windows
 [<EntryPoint>]
 let initApp _ = 
     Repo.createDb()
+    //Repo.insertTestData()
     Application.Init()
     Colors.Base <- Colors.TopLevel
     Application.Top.Add(mainWindow)
