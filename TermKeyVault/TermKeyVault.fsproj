@@ -16,8 +16,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Windows.fs" />
+    <Compile Include="Types.fs" />
     <Compile Include="Cryptography.fs" />
     <Compile Include="Repo.fs" />
+    <Compile Include="Components.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

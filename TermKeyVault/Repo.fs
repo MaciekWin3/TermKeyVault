@@ -2,7 +2,7 @@
 open System.Data.SQLite
 open System
 
-type record = {
+type Record = {
     Title: string
     Username: string
     Password: string
