@@ -2,38 +2,7 @@
 
 open Terminal.Gui
 open System.Data
-open Repo
-
-let categoryTable = 
-    new TableView(
-        X = 0,
-        Y = 0,
-        Width = Dim.Percent(25f),
-        Height = Dim.Percent(70f),
-        FullRowSelect = true
-    )
-
-categoryTable.Style.AlwaysShowHeaders <- true
-
-let recordTable = 
-    new TableView(
-        X = Pos.Right(categoryTable),
-        Y = 0,
-        Width = Dim.Percent(75f),
-        Height = Dim.Percent(70f),
-        FullRowSelect = true
-    )
-
-let frameView =
-    new FrameView(
-        X = 0,
-        Y = Pos.Bottom(categoryTable),
-        Width = Dim.Fill(),
-        Height = Dim.Fill(),
-        Title = "Details"
-    )
-
-recordTable.Style.AlwaysShowHeaders <- true
+open Types
 
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
@@ -65,6 +34,16 @@ let convertListToDataTableCategory(list: List<Record>) =
     )
     table
 
+let action (e: TableView.CellActivatedEventArgs) = 
+    let row = e.Row
+    let name = e.Table.Rows[row][0]
+    match name with
+    | null -> ()
+    | _ -> 
+        MessageBox.Query("Test", "Test")
+        |> ignore
+
+
 let openFileDialog() = 
     // make it cross platform
     let dialog = new OpenDialog("Open", "Open a file")
@@ -72,7 +51,7 @@ let openFileDialog() =
     Application.Run dialog |> ignore
     dialog.FilePath |> ignore
 
-
+(* MenuBar *)
 let menu = 
     new MenuBar(
         [|
@@ -88,20 +67,7 @@ let menu =
         |])
 
 
-
-let action (e: TableView.CellActivatedEventArgs) = 
-    let row = e.Row
-    let name = e.Table.Rows[row][0]
-    match name with
-    | null -> ()
-    | string -> 
-        //Application.Top.RemoveAll();
-        //let imageWindow = Me
-        //Application.Top.Add()
-        MessageBox.Query("Test", "Test")
-        |> ignore
-
-
+(* Context Menu *)
 let showContextMenu(screenPoint: Point, id: string) = 
     let contextMenu = new ContextMenu(0,0,
         MenuBarItem ("File",
@@ -112,6 +78,40 @@ let showContextMenu(screenPoint: Point, id: string) =
 
     contextMenu.Show() 
 
+(* Category table *)
+let categoryTable = 
+    new TableView(
+        X = 0,
+        Y = 0,
+        Width = Dim.Percent(25f),
+        Height = Dim.Percent(70f),
+        FullRowSelect = true
+    )
+
+categoryTable.Style.AlwaysShowHeaders <- true
+categoryTable.Table <- convertListToDataTableCategory(Repo.returnTestData())
+
+(* Deaitls frame *)
+let frameView =
+    new FrameView(
+        X = 0,
+        Y = Pos.Bottom(categoryTable),
+        Width = Dim.Fill(),
+        Height = Dim.Fill(),
+        Title = "Details"
+    )
+
+(* Record table *)
+let recordTable = 
+    new TableView(
+        X = Pos.Right(categoryTable),
+        Y = 0,
+        Width = Dim.Percent(75f),
+        Height = Dim.Percent(70f),
+        FullRowSelect = true
+    )
+
+recordTable.Style.AlwaysShowHeaders <- true
 recordTable.add_CellActivated(action)
 recordTable.Table <- convertListToDataTable(Repo.returnTestData())
 recordTable.add_MouseClick(fun e -> 
@@ -124,10 +124,15 @@ recordTable.add_MouseClick(fun e ->
         with
         | _ -> ()
 )
-categoryTable.Table <- convertListToDataTableCategory(Repo.returnTestData())
 
 recordTable.add_SelectedCellChanged(fun e -> 
     let row = e.NewRow
     let name = e.Table.Rows[row][0]
     frameView.Text <- name.ToString()
 )
+
+
+
+
+
+

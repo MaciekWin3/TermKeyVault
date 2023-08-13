@@ -1,17 +1,7 @@
 ﻿module Repo
 open System.Data.SQLite
+open Types
 open System
-
-type Record = {
-    Title: string
-    Username: string
-    Password: string
-    Url: string
-    Notes: string 
-    Category: string
-    CreationDate: DateTime 
-    LastModifiedDate: DateTime
-} 
 
 let createDb() = 
     let dbFileName = "sample.db"
