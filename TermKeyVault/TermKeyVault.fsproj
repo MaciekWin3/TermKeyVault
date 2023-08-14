@@ -20,7 +20,6 @@
     <Compile Include="Cryptography.fs" />
     <Compile Include="Repo.fs" />
     <Compile Include="Components.fs" />
-    <Compile Include="Windows.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

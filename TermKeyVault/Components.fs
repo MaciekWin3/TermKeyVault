@@ -2,9 +2,11 @@
 
 open Terminal.Gui
 open System.Data
-open Types
 open System
+
+open Types
 open Repo
+open Cryptography
 
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
@@ -51,9 +53,6 @@ let openFileDialog() =
     dialog.DirectoryPath <- "/home"
     Application.Run dialog |> ignore
     dialog.FilePath |> ignore
-
-
-
 
 
 (* Context Menu *)
@@ -214,13 +213,21 @@ let showRecordDialog() =
     let createButton = new Button("Create", true)
     createButton.add_Clicked(fun _ -> 
 
+        let salt = generateSalt 32
+        let enteredPassword = passwordTextField.Text
+        let hashedEnteredPassword =
+            enteredPassword
+            |> fun password ->
+                hashPassword (password |> string) salt
+            |> string
+
         let updatedRecord = {
             record with
-                Title = titleTextField.Text.ToString()
-                Username = usernameTextField.Text.ToString()
-                Password = passwordTextField.Text.ToString()
-                Url = urlTextField.Text.ToString()
-                Notes = notesTextField.Text.ToString()
+                Title = titleTextField.Text |> string
+                Username = usernameTextField.Text |> string
+                Password = hashedEnteredPassword
+                Url = urlTextField.Text |> string
+                Notes = notesTextField.Text |> string
                 CreationDate = DateTime.Now
                 LastModifiedDate = DateTime.Now
         }
@@ -261,6 +268,74 @@ categoryTable.add_SelectedCellChanged(fun e ->
     let name = e.Table.Rows[row][0]
     recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory(name.ToString()))
 )
+
+let mainWindow = 
+    let window = new Window(
+        Title = "TermKeyVault",
+        X = 0,
+        Y = 1,
+        Width = Dim.Fill(),
+        Height = Dim.Fill()
+    )
+    window.Add(categoryTable)
+    window.Add(recordTable)
+    window.Add(frameView)
+    window
+
+let switchWindow(newWindow: Window) (showMenu: bool) = 
+    Application.Top.RemoveAll();
+    Application.Top.Add(newWindow)
+    if showMenu then
+        Application.Top.Add(menu)
+
+(* Login Window *)
+let loginLabel = new Label(
+    Text = "Enter Master Password: ",
+    X = Pos.Center(),
+    Y = Pos.Center()
+)
+
+let passwordField = 
+    let field = new TextField(
+        X = Pos.Center(),
+        Y = Pos.Bottom(loginLabel),
+        Width = 30,
+        Secret = true
+    )
+    field.add_KeyPress(fun e -> 
+        if (e.KeyEvent.Key = Key.Enter) then
+            e.Handled <- true
+            let salt = generateSalt 32
+            let enteredPassword = field.Text
+            let hashedEnteredPassword =
+                enteredPassword
+                |> fun password ->
+                    hashPassword (password |> string) salt
+                |> string
+
+            let masterPassword = "dupa"
+            if (masterPassword = "dupa") then
+                switchWindow mainWindow true
+            else
+                field.Text <- ""
+                MessageBox.ErrorQuery("Error", "Wrong password", "Ok") |> ignore
+    )
+    field
+
+let loginWindow =
+    let window = new Window(
+        Title = "Login",
+        X = 0,
+        Y = 0,
+        Width = Dim.Fill(),
+        Height = Dim.Fill()
+    )
+    window.Add(loginLabel)
+    window.Add(passwordField)
+    window
+
+
+
 
 
 
