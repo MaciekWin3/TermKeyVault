@@ -6,22 +6,33 @@ open System
 
 let connectionString(file: string, password: string)= sprintf "Data Source=file:%s;Password=%s;" file password
 
+let checkPassword(password: string) =
+    let connection = new SqliteConnection(connectionString("sample.db", password))
+    try
+        connection.Open()
+        connection.Close()
+        true
+    with
+    | _ -> false
+
 let prepareDb(password: string) =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let connection = new SqliteConnection(connectionString("sample.db", password))
     connection.Open()
     let command = connection.CreateCommand()
-    command.CommandText <-"Create Table Records (
-        Id INTEGER  primary key autoincrement,
-        Title varchar(255),
-        Username varchar(255),
-        Password varchar(255),
-        Url varchar(255),
-        Notes varchar(255),
-        Category varchar(255),
-        CreationDate datetime,
-        LastModifiedDate datetime)"
-
-    command.ExecuteNonQuery() |> ignore
+    try
+        command.CommandText <-"Create Table Records (
+            Id INTEGER  primary key autoincrement,
+            Title varchar(255),
+            Username varchar(255),
+            Password varchar(255),
+            Url varchar(255),
+            Notes varchar(255),
+            Category varchar(255),
+            CreationDate datetime,
+            LastModifiedDate datetime)"
+        command.ExecuteNonQuery() |> ignore
+    with
+    | _ -> ()
     connection.Close()
 
 let createRecord(record: Record) =
@@ -64,7 +75,7 @@ let getRecords() =
     connection.Close()
     records
 
-let getRecordsByCategory(category: string) (password: string) =
+let getRecordsByCategory(category: string)  =
     let connection = new SqliteConnection(connectionString("sample.db", "test"))
     connection.Open()
     let command = connection.CreateCommand()
@@ -87,7 +98,7 @@ let getRecordsByCategory(category: string) (password: string) =
     connection.Close()
     records
 
-let getCategories(password: string) = 
+let getCategories() = 
     let connection = new SqliteConnection(connectionString("sample.db", "test"))
     connection.Open() 
     let command = connection.CreateCommand()

@@ -76,7 +76,7 @@ let categoryTable =
         FullRowSelect = true
     )
     table.Style.AlwaysShowHeaders <- true
-    table.Table <- convertListToDataTableCategory(Repo.getCategories("dupa"))
+    table.Table <- convertListToDataTableCategory(Repo.getCategories())
     table
 
 (* Deaitls frame *)
@@ -234,7 +234,7 @@ let showRecordDialog() =
         }
 
         createRecord(updatedRecord)
-        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories("dupa"))
+        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
         recordTable.Table <- convertListToDataTable(Repo.getRecords())
         Application.RequestStop(dialog)
     )
@@ -264,7 +264,7 @@ let menu =
 categoryTable.add_SelectedCellChanged(fun e -> 
     let row = e.NewRow
     let name = e.Table.Rows[row][0]
-    recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory (name.ToString()) "dupa")
+    recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory (name.ToString()))
 )
 
 let mainWindow = 
@@ -303,16 +303,13 @@ let passwordField =
     field.add_KeyPress(fun e -> 
         if (e.KeyEvent.Key = Key.Enter) then
             e.Handled <- true
-            let salt = generateSalt 32
-            let enteredPassword = field.Text |> string
-            let hashedEnteredPassword =
-                enteredPassword
-                |> fun password ->
-                    hashPassword (password |> string) salt
-                |> string
 
-            let masterPassword = "dupa"
-            if (enteredPassword = masterPassword) then
+            let checkIfPasswordIsValid =
+                field.Text
+                |> string 
+                |> checkPassword
+
+            if (checkIfPasswordIsValid) then
                 switchWindow mainWindow true
             else
                 field.Text <- ""
