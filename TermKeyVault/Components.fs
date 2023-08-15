@@ -76,7 +76,7 @@ let categoryTable =
         FullRowSelect = true
     )
     table.Style.AlwaysShowHeaders <- true
-    table.Table <- convertListToDataTableCategory(Repo.getCategories())
+    table.Table <- convertListToDataTableCategory(Repo.getCategories("dupa"))
     table
 
 (* Deaitls frame *)
@@ -123,6 +123,7 @@ let showRecordDialog() =
     let dialog = new Dialog("Add record", 60, 20)
 
     let record = {
+        Id = 0
         Title = ""
         Username = ""
         Password = ""
@@ -233,10 +234,7 @@ let showRecordDialog() =
         }
 
         createRecord(updatedRecord)
-        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
-        recordTable.Table <- convertListToDataTable(Repo.getRecords())
-
-        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
+        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories("dupa"))
         recordTable.Table <- convertListToDataTable(Repo.getRecords())
         Application.RequestStop(dialog)
     )
@@ -266,7 +264,7 @@ let menu =
 categoryTable.add_SelectedCellChanged(fun e -> 
     let row = e.NewRow
     let name = e.Table.Rows[row][0]
-    recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory(name.ToString()))
+    recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory (name.ToString()) "dupa")
 )
 
 let mainWindow = 
@@ -306,7 +304,7 @@ let passwordField =
         if (e.KeyEvent.Key = Key.Enter) then
             e.Handled <- true
             let salt = generateSalt 32
-            let enteredPassword = field.Text
+            let enteredPassword = field.Text |> string
             let hashedEnteredPassword =
                 enteredPassword
                 |> fun password ->
@@ -314,7 +312,7 @@ let passwordField =
                 |> string
 
             let masterPassword = "dupa"
-            if (masterPassword = "dupa") then
+            if (enteredPassword = masterPassword) then
                 switchWindow mainWindow true
             else
                 field.Text <- ""

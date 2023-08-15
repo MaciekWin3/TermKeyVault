@@ -5,7 +5,7 @@ open Components
 
 [<EntryPoint>]
 let initApp _ = 
-    Repo.createDb()
+    //Repo.prepareDb("test")
     //Repo.insertTestData()
     Application.Init()
     Colors.Base <- Colors.TopLevel

@@ -3,6 +3,7 @@
 open System
 
 type Record = {
+    Id: int
     Title: string
     Username: string
     Password: string

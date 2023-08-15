@@ -1,34 +1,44 @@
-﻿module Repo
+﻿module Repo1
 
-open Types
-open Microsoft.Data.Sqlite
 open System
+open Types
+open System.Data.SQLite
 
-let connectionString(file: string, password: string)= sprintf "Data Source=file:%s;Password=%s;" file password
+let createDb(password: string) = 
+    let dbFileName = "sample.db"
+    if System.IO.File.Exists(dbFileName) then
+        ()
+    else
+        let connectionString = sprintf "Data Source=%s;Version=3;" dbFileName
+        SQLiteConnection.CreateFile dbFileName |> ignore
+        let connection = new SQLiteConnection(connectionString)
+        connection.Open();
+        connection.ChangePassword(password)
 
-let prepareDb(password: string) =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+        let createTableQuery = "Create Table Records (
+            Id INTEGER  primary key autoincrement,
+            Title varchar(255),
+            Username varchar(255),
+            Password varchar(255),
+            Url varchar(255),
+            Notes varchar(255),
+            Category varchar(255),
+            CreationDate datetime,
+            LastModifiedDate datetime)"
+
+        let structureCommand = new SQLiteCommand(createTableQuery, connection)
+        structureCommand.ExecuteNonQuery() |> ignore
+
+        connection.Close()
+
+
+let createRecord(record: Record) = 
+    let dbFileName = "sample.db"
+    let connectionString = sprintf "Data Source=%s;Version=3;Password=dupa;Encryption=SQLiteCrypt" dbFileName
+    let connection = new SQLiteConnection(connectionString)
     connection.Open()
-    let command = connection.CreateCommand()
-    command.CommandText <-"Create Table Records (
-        Id INTEGER  primary key autoincrement,
-        Title varchar(255),
-        Username varchar(255),
-        Password varchar(255),
-        Url varchar(255),
-        Notes varchar(255),
-        Category varchar(255),
-        CreationDate datetime,
-        LastModifiedDate datetime)"
 
-    command.ExecuteNonQuery() |> ignore
-    connection.Close()
-
-let createRecord(record: Record) =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
-    connection.Open()
-    let command = connection.CreateCommand()
-    command.CommandText <- sprintf "INSERT INTO Records (
+    let query = sprintf "INSERT INTO Records (
         Title,
         Username,
         Password,
@@ -38,15 +48,22 @@ let createRecord(record: Record) =
         CreationDate,
         LastModifiedDate)
         VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" record.Title record.Username record.Password record.Url record.Notes record.Category (record.CreationDate.ToString()) (record.LastModifiedDate.ToString())
+
+    let command = new SQLiteCommand(query, connection)
     command.ExecuteNonQuery() |> ignore
+
     connection.Close()
 
 let getRecords() =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let dbFileName = "sample.db"
+    let connectionString = sprintf "Data Source=%s;Version=3;Password=dupa;" dbFileName
+    let connection = new SQLiteConnection(connectionString)
     connection.Open()
-    let command = connection.CreateCommand()
-    command.CommandText <- "SELECT * FROM Records"
+
+    let query = "SELECT * FROM Records"
+    let command = new SQLiteCommand(query, connection)
     let result = command.ExecuteReader()
+
     let mutable records = []
     while result.Read() do
         let id = result.GetInt32(0)
@@ -64,12 +81,16 @@ let getRecords() =
     connection.Close()
     records
 
-let getRecordsByCategory(category: string) (password: string) =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+let getRecordsByCategory(category: string) = 
+    let dbFileName = "sample.db"
+    let connectionString = sprintf "Data Source=%s;Version=3;Password=dupa;" dbFileName
+    let connection = new SQLiteConnection(connectionString)
     connection.Open()
-    let command = connection.CreateCommand()
-    command.CommandText <- sprintf "SELECT * FROM Records WHERE Category = '%s'" category
+
+    let query = sprintf "SELECT * FROM Records WHERE Category = '%s'" category
+    let command = new SQLiteCommand(query, connection)
     let result = command.ExecuteReader()
+
     let mutable records = []
     while result.Read() do
         let id = result.GetInt32(0)
@@ -87,11 +108,14 @@ let getRecordsByCategory(category: string) (password: string) =
     connection.Close()
     records
 
-let getCategories(password: string) = 
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
-    connection.Open() 
-    let command = connection.CreateCommand()
-    command.CommandText <- "SELECT DISTINCT Category FROM Records"
+let getCategories() =
+    let dbFileName = "sample.db"
+    let connectionString = sprintf "Data Source=%s;Version=3;Password=dupa;" dbFileName
+    let connection = new SQLiteConnection(connectionString)
+    connection.Open()
+
+    let query = "SELECT distinct Category FROM Records"
+    let command = new SQLiteCommand(query, connection)
     let result = command.ExecuteReader()
 
     let mutable categories = []
