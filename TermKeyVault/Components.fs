@@ -143,68 +143,90 @@ let showRecordDialog() =
 
     let titleTextField = new TextField(
         Text = record.Title,
-        X = Pos.Right(titleLabel),
-        Y = Pos.Top(titleLabel),
+        X = 0,
+        Y = Pos.Bottom(titleLabel),
         Width = Dim.Fill()
     )
 
     let usernameLabel = new Label(
         Text = "Username: ",
         X = 0,
-        Y = Pos.Bottom(titleLabel)
+        Y = Pos.Bottom(titleTextField)
     )
 
     let usernameTextField = new TextField(
         Text = record.Username,
-        X = Pos.Right(usernameLabel),
-        Y = Pos.Top(usernameLabel),
+        X = 0,
+        Y = Pos.Bottom(usernameLabel),
         Width = Dim.Fill()
     )
 
     let passwordLabel = new Label(
         Text = "Password: ",
         X = 0,
-        Y = Pos.Bottom(usernameLabel)
+        Y = Pos.Bottom(usernameTextField)
     )
 
     let passwordTextField = new TextField(
         Text = record.Password,
-        X = Pos.Right(passwordLabel),
-        Y = Pos.Top(passwordLabel),
+        X = 0,
+        Y = Pos.Bottom(passwordLabel),
         Width = Dim.Fill()
     )
 
     let urlLabel = new Label(
         Text = "Url: ",
         X = 0,
-        Y = Pos.Bottom(passwordLabel)
+        Y = Pos.Bottom(passwordTextField)
     )
 
     let urlTextField = new TextField(
         Text = record.Url,
-        X = Pos.Right(urlLabel),
-        Y = Pos.Top(urlLabel),
+        X = 0,
+        Y = Pos.Bottom(urlLabel),
         Width = Dim.Fill()
     )
 
     let notesLabel = new Label(
         Text = "Notes: ",
         X = 0,
-        Y = Pos.Bottom(urlLabel)
+        Y = Pos.Bottom(urlTextField)
     )
 
     let notesTextField = new TextField(
         Text = record.Notes,
-        X = Pos.Right(notesLabel),
-        Y = Pos.Top(notesLabel),
+        X = 0,
+        Y = Pos.Bottom(notesLabel),
         Width = Dim.Fill()
     )
+
+    let categoryLabel = new Label(
+        Text = "Category: ",
+        X = 0,
+        Y = Pos.Bottom(notesTextField)
+    )
+
+    let categoryComboBox: ComboBox = 
+        let cb = new ComboBox(
+            X = 0,
+            Y = Pos.Bottom(categoryLabel),
+            Width = Dim.Fill(),
+            Height = Dim.Fill(1)
+        )
+
+        let x = ["x"; "y"; "z"] |> List.toArray
+
+        //cb.SetSource(categories |> List.toArray);
+        cb.SetSource(x);
+        cb
+
 
     dialog.Add(titleLabel, titleTextField,
                usernameLabel, usernameTextField,
                passwordLabel, passwordTextField,
                urlLabel, urlTextField,
-               notesLabel, notesTextField)
+               notesLabel, notesTextField,
+               categoryLabel, categoryComboBox)
 
     (* Exit button *)
     let exitButton = new Button("Exit", true)
@@ -222,6 +244,10 @@ let showRecordDialog() =
                 hashPassword (password |> string) salt
             |> string
 
+        let c = categoryComboBox.Subviews.[0]
+        let z = categoryComboBox.SelectedItem
+        let x = urlTextField
+
         let updatedRecord = {
             record with
                 Title = titleTextField.Text |> string
@@ -229,6 +255,7 @@ let showRecordDialog() =
                 Password = hashedEnteredPassword
                 Url = urlTextField.Text |> string
                 Notes = notesTextField.Text |> string
+                Category = categoryComboBox.Text |> string
                 CreationDate = DateTime.Now
                 LastModifiedDate = DateTime.Now
         }
@@ -243,6 +270,31 @@ let showRecordDialog() =
     dialog.AddButton(exitButton)
     Application.Run(dialog) 
 
+let openPasswordGeneratorDialog() = 
+    let dialog = new Dialog("Password generator", 60, 20)
+
+    let password = generatePassword {
+        length = 16
+        numbers = true
+        uppercase = true
+        lowercase = false
+        special = true
+        excludeSimilar = true
+    }
+
+    let passwordLabel = new Label(
+        Text = password,
+        X = 0,
+        Y = 1
+    )
+
+    let exitButton = new Button("Exit", true)
+    exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
+
+    dialog.Add(passwordLabel)
+    dialog.AddButton(exitButton)
+    Application.Run(dialog)
+
 (* MenuBar *)
 let menu = 
     new MenuBar(
@@ -251,7 +303,7 @@ let menu =
                 [| MenuItem ("Open", "", (fun () -> openFileDialog())) 
                    MenuItem ("Create", "", (fun () -> Application.RequestStop ())) |]);
             MenuBarItem ("Tools",
-                [| MenuItem ("Password generator", "", Unchecked.defaultof<_>)
+                [| MenuItem ("Password generator", "", (fun () -> openPasswordGeneratorDialog()))
                    MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
             MenuBarItem ("Records",
                 [| MenuItem ("Add record", "", (fun () -> showRecordDialog()))
@@ -266,6 +318,8 @@ categoryTable.add_SelectedCellChanged(fun e ->
     let name = e.Table.Rows[row][0]
     recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory (name.ToString()))
 )
+
+
 
 let mainWindow = 
     let window = new Window(
