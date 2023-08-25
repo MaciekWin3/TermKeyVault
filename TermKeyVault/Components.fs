@@ -282,7 +282,7 @@ let openPasswordGeneratorDialog() =
         excludeSimilar = true
     }
 
-    let passwordLabel = new Label(
+    let passwordField = new Label(
         Text = password,
         X = 0,
         Y = 1
@@ -291,7 +291,7 @@ let openPasswordGeneratorDialog() =
     let exitButton = new Button("Exit", true)
     exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
 
-    dialog.Add(passwordLabel)
+    dialog.Add(passwordField)
     dialog.AddButton(exitButton)
     Application.Run(dialog)
 
@@ -318,8 +318,6 @@ categoryTable.add_SelectedCellChanged(fun e ->
     let name = e.Table.Rows[row][0]
     recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory (name.ToString()))
 )
-
-
 
 let mainWindow = 
     let window = new Window(
