@@ -282,18 +282,20 @@ let openPasswordGeneratorDialog() =
         excludeSimilar = true
     }
 
-    let passwordField = new Label(
+    let passwordField = new TextField(
         Text = password,
         X = 0,
-        Y = 1
+        Y = 1,
+        Width = Dim.Fill(),
+        ReadOnly = true
     )
 
     let exitButton = new Button("Exit", true)
     exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
 
-    dialog.Add(passwordField)
-    dialog.AddButton(exitButton)
-    Application.Run(dialog)
+    dialog.Add passwordField
+    dialog.AddButton exitButton 
+    Application.Run dialog
 
 (* MenuBar *)
 let menu = 
@@ -380,11 +382,4 @@ let loginWindow =
     window.Add(loginLabel)
     window.Add(passwordField)
     window
-
-
-
-
-
-
-
 
