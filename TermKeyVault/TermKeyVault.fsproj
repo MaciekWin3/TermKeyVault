@@ -30,7 +30,7 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.6" />
     <PackageReference Include="SQLitePCLRaw.bundle_sqlcipher" Version="1.1.14" />
     <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
-    <PackageReference Include="Terminal.Gui" Version="1.13.5" />
+    <PackageReference Include="Terminal.Gui" Version="1.14.0" />
   </ItemGroup>
 
   <ItemGroup>
