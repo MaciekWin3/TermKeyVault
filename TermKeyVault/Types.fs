@@ -13,3 +13,12 @@ type Record = {
     CreationDate: DateTime 
     LastModifiedDate: DateTime
 } 
+
+type PasswordParams = {
+    length: int
+    numbers: bool
+    uppercase: bool
+    lowercase: bool
+    special: bool
+    excludeSimilar: bool
+}

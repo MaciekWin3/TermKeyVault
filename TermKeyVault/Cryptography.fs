@@ -4,6 +4,8 @@ open System.Security.Cryptography
 open System.Text
 open System
 
+open Types
+
 let generateSalt (saltSize: int) =
     let salt = Array.zeroCreate<byte> saltSize
     use rng = RandomNumberGenerator.Create()
@@ -18,14 +20,6 @@ let hashPassword (password: string) (salt: byte[]) =
 let verifyPassword (enteredPassword: string) (storedHash: string) (salt: byte[]) =
     let hashedEnteredPassword = hashPassword enteredPassword salt
     hashedEnteredPassword = storedHash
-
-type PasswordParams =
-    { length: int
-      numbers: bool
-      uppercase: bool
-      lowercase: bool
-      special: bool
-      excludeSimilar: bool }
 
 let generatePassword (parameters: PasswordParams) : string =
     let lowerCase = [ 'a' .. 'z' ]

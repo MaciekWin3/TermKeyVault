@@ -303,10 +303,62 @@ let openPasswordGeneratorDialog() =
         ReadOnly = true
     )
 
+    let numbersCheckBox = new CheckBox(
+        s = "Allow numbers",
+        X = 0,
+        Y = Pos.Bottom(passwordField),
+        Checked = true
+    )
+
+    let uppercaseCheckBox = new CheckBox(
+        s = "Allow uppercase",
+        X = 0,
+        Y = Pos.Bottom(numbersCheckBox),
+        Checked = true
+    )
+
+    let lowercaseCheckBox = new CheckBox(
+        s = "Allow lowercase",
+        X = 0,
+        Y = Pos.Bottom(uppercaseCheckBox),
+        Checked = true
+    )
+
+    let specialCheckBox = new CheckBox(
+        s = "Allow special characters",
+        X = 0,
+        Y = Pos.Bottom(lowercaseCheckBox),
+        Checked = true
+    )
+
+    let excludeSimilarCheckBox = new CheckBox(
+        s = "Exclude similar characters",
+        X = 0,
+        Y = Pos.Bottom(specialCheckBox),
+        Checked = true
+    )
+
+    let generateButton = new Button("Generate", true)
+
+    generateButton.add_Clicked(fun _ -> 
+        let password = generatePassword {
+            length = 16
+            numbers = numbersCheckBox.Checked
+            uppercase = uppercaseCheckBox.Checked 
+            lowercase = lowercaseCheckBox.Checked 
+            special = specialCheckBox.Checked 
+            excludeSimilar = excludeSimilarCheckBox.Checked 
+        }
+
+        passwordField.Text <- password
+    )
+
     let exitButton = new Button("Exit", true)
     exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
 
-    dialog.Add passwordField
+    dialog.Add(passwordField, numbersCheckBox, uppercaseCheckBox,
+        lowercaseCheckBox, specialCheckBox, excludeSimilarCheckBox)
+    dialog.AddButton generateButton 
     dialog.AddButton exitButton 
     Application.Run dialog
 
