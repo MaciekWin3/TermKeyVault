@@ -20,7 +20,7 @@ let prepareDb(password: string) =
     connection.Open()
     let command = connection.CreateCommand()
     try
-        command.CommandText <-"Create Table Records (
+        command.CommandText <- "Create Table Records (
             Id INTEGER  primary key autoincrement,
             Title varchar(255),
             Username varchar(255),

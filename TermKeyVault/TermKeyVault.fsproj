@@ -19,7 +19,6 @@
     <Compile Include="Types.fs" />
     <Compile Include="Cryptography.fs" />
     <Compile Include="Repo.fs" />
-    <Compile Include="Repo1.fs" />
     <Compile Include="Components.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

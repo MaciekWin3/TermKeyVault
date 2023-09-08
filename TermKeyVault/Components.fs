@@ -79,15 +79,28 @@ let categoryTable =
     table.Table <- convertListToDataTableCategory(Repo.getCategories())
     table
 
+let textFieldDetails = 
+    let tv = new TextView(
+        X = 0,
+        Y = 0,
+        Width = Dim.Fill(),
+        Height = Dim.Fill(),
+        ReadOnly = true
+    )
+    tv.DesiredCursorVisibility <- CursorVisibility.Invisible
+    tv.ColorScheme <- Colors.Menu
+    tv
+
 (* Deaitls frame *)
 let frameView =
-    new FrameView(
+    let fv = new FrameView(
         X = 0,
         Y = Pos.Bottom(categoryTable),
         Width = Dim.Fill(),
-        Height = Dim.Fill(),
-        Title = "Details"
+        Height = Dim.Fill()
     )
+    fv.Add(textFieldDetails)
+    fv
 
 (* Record table *)
 let recordTable = 
@@ -115,7 +128,7 @@ let recordTable =
     table.add_SelectedCellChanged(fun e -> 
         let row = e.NewRow
         let name = e.Table.Rows[row][0]
-        frameView.Text <- name.ToString()
+        textFieldDetails.Text <- name.ToString()
     )
     table
 
