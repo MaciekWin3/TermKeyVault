@@ -287,12 +287,12 @@ let openPasswordGeneratorDialog() =
     let dialog = new Dialog("Password generator", 60, 20)
 
     let password = generatePassword {
-        length = 16
-        numbers = true
-        uppercase = true
-        lowercase = false
-        special = true
-        excludeSimilar = true
+        Length = 16
+        Numbers = true
+        Uppercase = true
+        Lowercase = false
+        Special = true
+        ExcludeSimilar = true
     }
 
     let passwordField = new TextField(
@@ -342,12 +342,12 @@ let openPasswordGeneratorDialog() =
 
     generateButton.add_Clicked(fun _ -> 
         let password = generatePassword {
-            length = 16
-            numbers = numbersCheckBox.Checked
-            uppercase = uppercaseCheckBox.Checked 
-            lowercase = lowercaseCheckBox.Checked 
-            special = specialCheckBox.Checked 
-            excludeSimilar = excludeSimilarCheckBox.Checked 
+            Length = 16
+            Numbers = numbersCheckBox.Checked
+            Uppercase = uppercaseCheckBox.Checked 
+            Lowercase = lowercaseCheckBox.Checked 
+            Special = specialCheckBox.Checked 
+            ExcludeSimilar = excludeSimilarCheckBox.Checked 
         }
 
         passwordField.Text <- password

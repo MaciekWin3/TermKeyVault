@@ -30,13 +30,13 @@ let generatePassword (parameters: PasswordParams) : string =
 
     let selectedCharacters =
         List.concat
-            [ if parameters.lowercase then lowerCase else []
-              if parameters.uppercase then upperCase else []
-              if parameters.special then special else []
-              if parameters.numbers then numbers else [] ]
+            [ if parameters.Lowercase then lowerCase else []
+              if parameters.Uppercase then upperCase else []
+              if parameters.Special then special else []
+              if parameters.Numbers then numbers else [] ]
 
     let filteredCharacters =
-        if parameters.excludeSimilar then
+        if parameters.ExcludeSimilar then
             selectedCharacters
             |> List.filter (fun c -> not (simmilarCharacters |> List.contains c))
         else
@@ -45,7 +45,7 @@ let generatePassword (parameters: PasswordParams) : string =
     let random = Random()
 
     let password =
-        List.init parameters.length (fun _ ->
+        List.init parameters.Length (fun _ ->
             let index = random.Next(0, filteredCharacters.Length)
             filteredCharacters.[index])
         |> List.map string

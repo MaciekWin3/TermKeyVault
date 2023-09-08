@@ -15,10 +15,10 @@ type Record = {
 } 
 
 type PasswordParams = {
-    length: int
-    numbers: bool
-    uppercase: bool
-    lowercase: bool
-    special: bool
-    excludeSimilar: bool
+    Length: int
+    Numbers: bool
+    Uppercase: bool
+    Lowercase: bool
+    Special: bool
+    ExcludeSimilar: bool
 }
