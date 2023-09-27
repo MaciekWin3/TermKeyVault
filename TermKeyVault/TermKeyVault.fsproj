@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="7.0.10" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="7.0.11" />
     <PackageReference Include="sqlite-net-sqlcipher" Version="1.8.116" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.6" />
     <PackageReference Include="SQLitePCLRaw.bundle_sqlcipher" Version="1.1.14" />
