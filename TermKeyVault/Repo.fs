@@ -20,9 +20,10 @@ let prepareDb(password: string) =
     connection.Open()
     let command = connection.CreateCommand()
     try
+        // TODO: Make title unique
         command.CommandText <- "Create Table Records (
             Id INTEGER  primary key autoincrement,
-            Title varchar(255),
+            Title varchar(255), 
             Username varchar(255),
             Password varchar(255),
             Url varchar(255),
@@ -98,6 +99,42 @@ let getRecordsByCategory(category: string)  =
     connection.Close()
     records
 
+let getRecordByTitle(title: string): Record option =
+    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    connection.Open()
+    let command = connection.CreateCommand()
+    command.CommandText <- sprintf "SELECT * FROM Records WHERE Title = '%s'" title
+    let reader = command.ExecuteReader()
+    
+    let record =
+        if reader.Read() then
+            let id = reader.GetInt32(0)
+            let title = reader.GetString(1)
+            let username = reader.GetString(2)
+            let password = reader.GetString(3)
+            let url = reader.GetString(4)
+            let notes = reader.GetString(5)
+            let category = reader.GetString(6)
+            let creationDate = reader.GetString(7)
+            let lastModifiedDate = reader.GetString(8)
+            
+            Some {
+                Id = id
+                Title = title
+                Username = username
+                Password = password
+                Url = url
+                Notes = notes
+                Category = category
+                CreationDate = DateTime.Parse(creationDate)
+                LastModifiedDate = DateTime.Parse(lastModifiedDate)
+            }
+        else
+            None
+
+    connection.Close()
+    record
+
 let getCategories() = 
     let connection = new SqliteConnection(connectionString("sample.db", "test"))
     connection.Open() 
@@ -112,6 +149,14 @@ let getCategories() =
 
     connection.Close()
     categories
+
+let deleteRecord(title: string) = 
+    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    connection.Open()
+    let command = connection.CreateCommand()
+    command.CommandText <- sprintf "DELETE FROM Records WHERE Title = '%s'" title
+    command.ExecuteNonQuery() |> ignore
+    connection.Close();
 
 let returnTestData() = 
     let x = {Id = 1; Title = "GitHub"; Username = "user"; Password = "P@ssword"; Url = "https://github.com"; Notes = "Notes"; Category = "Social Media"; CreationDate = DateTime.Now; LastModifiedDate = DateTime.Now}
