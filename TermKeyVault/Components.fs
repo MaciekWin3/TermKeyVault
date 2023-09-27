@@ -38,15 +38,30 @@ let convertListToDataTableCategory(list: List<string>) =
     )
     table
 
+let recordDialog (record: Record) = 
+    let dialog = new Dialog(record.Title, 80, 20)
+    let titleLabel = new Label(
+        Text = record.Password,
+        X = 0,
+        Y = 1
+    )
+
+    dialog.Add(titleLabel)
+    Application.Run dialog
+
 let action (e: TableView.CellActivatedEventArgs) = 
     let row = e.Row
-    let name = e.Table.Rows[row][0]
+    let name = e.Table.Rows.[row].[0]
     match name with
-    | null -> ()
-    | _ -> 
-        MessageBox.Query("Test", "Test")
-        |> ignore
-
+    | :? string as str ->
+        let record = Repo.getRecordByTitle(str)
+        match record with
+        | Some record -> 
+            recordDialog(record)
+        | None ->
+            ()
+    | _ ->
+        ()
 
 let openFileDialog() = 
     let dialog = new OpenDialog("Open", "Open a file")
@@ -54,14 +69,14 @@ let openFileDialog() =
     Application.Run dialog |> ignore
     dialog.FilePath |> ignore
 
-
 (* Context Menu *)
-let showContextMenu(screenPoint: Point, id: string) = 
+let showContextMenu(screenPoint: Point, title: string) = 
     let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
         MenuBarItem ("File",
             [| 
                 MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
                 MenuItem ("Edit", "", (fun () -> Application.RequestStop ()))
+                MenuItem ("Delete", "", (fun () -> Repo.deleteRecord(title)))
             |]))
 
     contextMenu.Show() 
@@ -111,15 +126,16 @@ let recordTable =
         Height = Dim.Percent(70f),
         FullRowSelect = true
     )
+    let records = Repo.getRecords()
     table.Style.AlwaysShowHeaders <- true
+    table.Table <- convertListToDataTable(records)
     table.add_CellActivated(action)
-    table.Table <- convertListToDataTable(Repo.getRecords())
     table.add_MouseClick(fun e -> 
         if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
             table.SetSelection(1, e.MouseEvent.Y - 3, false);
             try
-                let id = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                showContextMenu(Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), id)
+                let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
+                showContextMenu(Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), title)
                 e.Handled <- true
             with
             | _ -> ()
