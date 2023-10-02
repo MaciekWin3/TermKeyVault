@@ -5,7 +5,25 @@ VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TermKeyVault", "TermKeyVault\TermKeyVault.fsproj", "{F9EBFBF2-4C95-4436-BBCA-E9F80821DAEA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TermKeyVault.Tests", "TermKeyVault.Tests\TermKeyVault.Tests.fsproj", "{43946D56-FCBC-4B50-A290-5864907F54C5}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TermKeyVault.Tests", "TermKeyVault.Tests\TermKeyVault.Tests.fsproj", "{43946D56-FCBC-4B50-A290-5864907F54C5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4B980D20-D4E9-4DC1-B004-AEB71F42BD23}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{20CC639F-9F2C-49C0-B3D9-CC2C39992CB0}"
+	ProjectSection(SolutionItems) = preProject
+		.github\dependabot.yml = .github\dependabot.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{7B7EA28A-51ED-4BA9-A48C-ACB1E34EF92F}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\workflow.yml = .github\workflows\workflow.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +42,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{20CC639F-9F2C-49C0-B3D9-CC2C39992CB0} = {4B980D20-D4E9-4DC1-B004-AEB71F42BD23}
+		{7B7EA28A-51ED-4BA9-A48C-ACB1E34EF92F} = {20CC639F-9F2C-49C0-B3D9-CC2C39992CB0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {73D0E2D2-14EA-4F45-B50A-F698184401CB}
