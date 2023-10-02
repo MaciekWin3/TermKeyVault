@@ -15,15 +15,15 @@ let convertListToDataTable(list: List<Record>) =
     table.Columns.Add("Password") |> ignore
     table.Columns.Add("Category") |> ignore
     table.Columns.Add("Url") |> ignore
-    table.Columns.Add("Notes") |> ignore
     list |> List.iter (fun item -> 
+        // decalre here byte array
+        let decryptedPassword = xorDecrypt (item.Password, 32)
+        let maskedPassword = new string('*', decryptedPassword.Length)
         let row = table.NewRow()
         row.[0] <- item.Title
         row.[1] <- item.Username
-        row.[2] <- item.Password
+        row.[2] <- maskedPassword 
         row.[3] <- item.Category
-        row.[4] <- item.Url
-        row.[5] <- item.Notes
         table.Rows.Add(row) |> ignore
     )
     table
@@ -41,7 +41,7 @@ let convertListToDataTableCategory(list: List<string>) =
 let recordDialog (record: Record) = 
     let dialog = new Dialog(record.Title, 80, 20)
     let titleLabel = new Label(
-        Text = record.Password,
+        Text = Cryptography.xorDecrypt(record.Password, 32),
         X = 0,
         Y = 1
     )
@@ -135,7 +135,8 @@ let recordTable =
             table.SetSelection(1, e.MouseEvent.Y - 3, false);
             try
                 let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                showContextMenu(Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), title)
+                showContextMenu(Point(
+                    e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), title)
                 e.Handled <- true
             with
             | _ -> ()
@@ -267,10 +268,10 @@ let showRecordDialog() =
 
         let salt = generateSalt 32
         let enteredPassword = passwordTextField.Text
-        let hashedEnteredPassword =
+        let encryptedPassword =
             enteredPassword
             |> fun password ->
-                hashPassword (password |> string) salt
+                xorEncrypt(password |> string, 32)
             |> string
 
         let c = categoryComboBox.Subviews.[0]
@@ -281,7 +282,7 @@ let showRecordDialog() =
             record with
                 Title = titleTextField.Text |> string
                 Username = usernameTextField.Text |> string
-                Password = hashedEnteredPassword
+                Password = encryptedPassword
                 Url = urlTextField.Text |> string
                 Notes = notesTextField.Text |> string
                 Category = categoryComboBox.Text |> string
