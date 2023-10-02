@@ -7,6 +7,7 @@ open System
 open Types
 open Repo
 open Cryptography
+open Utils
 
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
@@ -16,7 +17,6 @@ let convertListToDataTable(list: List<Record>) =
     table.Columns.Add("Category") |> ignore
     table.Columns.Add("Url") |> ignore
     list |> List.iter (fun item -> 
-        // decalre here byte array
         let decryptedPassword = xorDecrypt (item.Password, 32)
         let maskedPassword = new string('*', decryptedPassword.Length)
         let row = table.NewRow()
@@ -393,8 +393,8 @@ let menu =
                 [| MenuItem ("Add record", "", (fun () -> showRecordDialog()))
                    MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
             MenuBarItem ("Help",
-                [| MenuItem ("About", "", Unchecked.defaultof<_>)
-                   MenuItem ("Website", "", Unchecked.defaultof<_>) |])
+                [| MenuItem ("About", "",(fun () -> openUrl("https://github.com/MaciekWin3/TermKeyVault") |> ignore))
+                   MenuItem ("Website", "", (fun () -> openUrl("https://github.com/MaciekWin3/TermKeyVault#readme") |> ignore)) |])
         |])
 
 categoryTable.add_SelectedCellChanged(fun e -> 
