@@ -22,3 +22,9 @@ type PasswordParams = {
     Special: bool
     ExcludeSimilar: bool
 }
+
+type Config = {
+    ShouldCreateDatabase: bool
+    DatabasePath: string
+    EncryptionKey: int
+}

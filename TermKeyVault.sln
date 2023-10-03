@@ -25,6 +25,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\workflow.yml = .github\workflows\workflow.yml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{1566D849-23EA-49C2-BCFC-6A0DE904292B}"
+	ProjectSection(SolutionItems) = preProject
+		docs\config.xml = docs\config.xml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +51,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{20CC639F-9F2C-49C0-B3D9-CC2C39992CB0} = {4B980D20-D4E9-4DC1-B004-AEB71F42BD23}
 		{7B7EA28A-51ED-4BA9-A48C-ACB1E34EF92F} = {20CC639F-9F2C-49C0-B3D9-CC2C39992CB0}
+		{1566D849-23EA-49C2-BCFC-6A0DE904292B} = {4B980D20-D4E9-4DC1-B004-AEB71F42BD23}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {73D0E2D2-14EA-4F45-B50A-F698184401CB}

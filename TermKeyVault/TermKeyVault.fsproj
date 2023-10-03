@@ -17,9 +17,9 @@
 
   <ItemGroup>
     <Compile Include="Types.fs" />
+    <Compile Include="Utils.fs" />
     <Compile Include="Cryptography.fs" />
     <Compile Include="Repo.fs" />
-    <Compile Include="Utils.fs" />
     <Compile Include="Components.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
