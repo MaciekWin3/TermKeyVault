@@ -10,9 +10,8 @@ open Cryptography
 open Utils
 
 let showConfig() = 
-    match parseConfig() with
-    | Some config -> MessageBox.Query("Test", $"Config: {config.DatabasePath}") |> ignore
-    | None -> ()
+    let config = parseConfig()
+    MessageBox.Query("Test", $"Config: {config.DatabasePath}") |> ignore
 
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
