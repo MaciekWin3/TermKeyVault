@@ -9,6 +9,10 @@ open Repo
 open Cryptography
 open Utils
 
+let showConfig() = 
+    let config = parseConfig()
+    MessageBox.Query("Test", $"Config: {config.DatabasePath}") |> ignore
+
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
     table.Columns.Add("Title") |> ignore
@@ -75,7 +79,7 @@ let showContextMenu(screenPoint: Point, title: string) =
         MenuBarItem ("File",
             [| 
                 MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
-                MenuItem ("Edit", "", (fun () -> Application.RequestStop ()))
+                MenuItem ("Edit", "", (fun () -> showConfig()))
                 MenuItem ("Delete", "", (fun () -> Repo.deleteRecord(title)))
             |]))
 
