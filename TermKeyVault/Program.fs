@@ -10,7 +10,6 @@ let initApp _ =
     Application.Init()
     Colors.Base <- Colors.TopLevel
     Application.Top.Add loginWindow 
-    Application.Top.Add menu
     Application.Run()
     Application.Shutdown();
     0

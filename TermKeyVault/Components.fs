@@ -8,10 +8,18 @@ open Types
 open Repo
 open Cryptography
 open Utils
+open System.Diagnostics
+open System.Timers
 
 let showConfig() = 
     let config = parseConfig()
-    MessageBox.Query("Test", $"Config: {config.DatabasePath}") |> ignore
+    MessageBox.Query("Config",
+        $"""
+        Db path: {config.DatabasePath}
+        Create: {config.ShouldCreateDatabase}
+        Config: {config.EncryptionKey}
+        """)
+        |> ignore
 
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
@@ -99,12 +107,58 @@ let textFieldDetails =
     tv.ColorScheme <- Colors.Menu
     tv
 
+let mutable isTimerRunning = false
+let timerLock = obj()
+
+let setClipboardTimer (statusBar: StatusBar) =
+    Application.MainLoop.Invoke(fun () -> 
+        lock timerLock (fun () ->
+            if isTimerRunning then
+                MessageBox.ErrorQuery("Timer", "Timer is already running") |> ignore
+                ()
+            else
+                let message (time: string) = $"Clipboard will be cleared in {time}"
+                statusBar.Items.[1].Title <- message "00:00:08"
+                let mutable elapsedTime = 0.0
+                let timer = new Timer(800.0)
+                timer.AutoReset <- true
+                timer.Elapsed.Add(fun _ -> 
+                    Application.Refresh()
+                    elapsedTime <- elapsedTime + 0.8
+                    let timeString = (TimeSpan.FromSeconds(8.0) - TimeSpan.FromSeconds(elapsedTime)).ToString(@"hh\:mm\:ss")
+                    statusBar.Items.[1].Title <- message timeString 
+                    if elapsedTime >= 8.0 then
+                        timer.Stop()
+                        timer.Dispose()
+                        Clipboard.TrySetClipboardData("") |> ignore
+                        elapsedTime <- 0.0
+                        statusBar.Items.[1].Title <- ""
+                        Application.Refresh()
+                        isTimerRunning <- false // Reset the flag when the timer completes
+                )
+                timer.Start()
+                isTimerRunning <- true
+        )
+        ()
+    )
+
+let statusBar = 
+    let bar = new StatusBar()
+    bar.Items <- [|
+        new StatusItem(Key.CharMask, "Something", fun () -> showConfig())
+        new StatusItem(Key.F1, "", fun () -> showConfig())
+    |]
+    bar
+
 (* Context Menu *)
 let showContextMenu(screenPoint: Point, record: Record, deleteMethod) = 
     let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
         MenuBarItem ("File",
             [| 
-                MenuItem ("Copy", "", (fun () -> Clipboard.TrySetClipboardData(xorDecrypt(record.Password, 32)) |> ignore)) 
+                MenuItem ("Copy", "", (fun () -> 
+                    Clipboard.TrySetClipboardData(xorDecrypt(record.Password, 32)) |> ignore
+                    setClipboardTimer(statusBar) |> ignore
+                ))
                 MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
                 MenuItem ("Edit", "", (fun () -> showConfig()))
                 MenuItem ("Delete", "", (fun () -> deleteMethod(record.Title)))
@@ -414,6 +468,7 @@ let menu =
                    MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
             MenuBarItem ("Help",
                 [| MenuItem ("About", "",(fun () -> openUrl("https://github.com/MaciekWin3/TermKeyVault") |> ignore))
+                   MenuItem ("Config", "",(fun () -> showConfig() |> ignore))
                    MenuItem ("Website", "", (fun () -> openUrl("https://github.com/MaciekWin3/TermKeyVault#readme") |> ignore)) |])
         |])
 
@@ -429,7 +484,7 @@ let mainWindow =
         X = 0,
         Y = 1,
         Width = Dim.Fill(),
-        Height = Dim.Fill()
+        Height = Dim.Fill(1)
     )
     window.Add(categoryTable)
     window.Add(recordTable)
@@ -438,42 +493,44 @@ let mainWindow =
 
 let switchWindow(newWindow: Window) (showMenu: bool) = 
     Application.Top.RemoveAll();
+    Application.Top.Add(statusBar)
+    Application.Top.Add(menu)
     Application.Top.Add(newWindow)
     if showMenu then
         Application.Top.Add(menu)
 
 (* Login Window *)
-let loginLabel = new Label(
-    Text = "Enter Master Password: ",
-    X = Pos.Center(),
-    Y = Pos.Center()
-)
-
-let passwordField = 
-    let field = new TextField(
-        X = Pos.Center(),
-        Y = Pos.Bottom(loginLabel),
-        Width = 30,
-        Secret = true
-    )
-    field.add_KeyPress(fun e -> 
-        if (e.KeyEvent.Key = Key.Enter) then
-            e.Handled <- true
-
-            let checkIfPasswordIsValid =
-                field.Text
-                |> string 
-                |> checkPassword
-
-            if (checkIfPasswordIsValid) then
-                switchWindow mainWindow true
-            else
-                field.Text <- ""
-                MessageBox.ErrorQuery("Error", "Wrong password", "Ok") |> ignore
-    )
-    field
-
 let loginWindow =
+    let loginLabel = new Label(
+        Text = "Enter Master Password: ",
+        X = Pos.Center(),
+        Y = Pos.Center()
+    )
+
+    let passwordField = 
+        let field = new TextField(
+            X = Pos.Center(),
+            Y = Pos.Bottom(loginLabel),
+            Width = 30,
+            Secret = true
+        )
+        field.add_KeyPress(fun e -> 
+            if (e.KeyEvent.Key = Key.Enter) then
+                e.Handled <- true
+
+                let checkIfPasswordIsValid =
+                    field.Text
+                    |> string 
+                    |> checkPassword
+
+                if (checkIfPasswordIsValid) then
+                    switchWindow mainWindow true
+                else
+                    field.Text <- ""
+                    MessageBox.ErrorQuery("Error", "Wrong password", "Ok") |> ignore
+        )
+        field
+
     let window = new Window(
         Title = "Login",
         X = 0,
