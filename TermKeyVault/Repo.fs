@@ -3,11 +3,18 @@
 open Types
 open Microsoft.Data.Sqlite
 open System
+open System.IO
+
+let dbPath =     
+    let appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+    let configDir = Path.Combine(appDataPath, "termkeyvault")
+    let dbPath = Path.Combine(configDir, "termkeyvault.db")
+    dbPath
 
 let connectionString(file: string, password: string)= sprintf "Data Source=file:%s;Password=%s;" file password
 
 let checkPassword(password: string) =
-    let connection = new SqliteConnection(connectionString("sample.db", password))
+    let connection = new SqliteConnection(connectionString(dbPath, password))
     try
         connection.Open()
         connection.Close()
@@ -16,7 +23,7 @@ let checkPassword(password: string) =
     | _ -> false
 
 let prepareDb(password: string) =
-    let connection = new SqliteConnection(connectionString("sample.db", password))
+    let connection = new SqliteConnection(connectionString(dbPath, password))
     connection.Open()
     let command = connection.CreateCommand()
     try
@@ -37,7 +44,7 @@ let prepareDb(password: string) =
     connection.Close()
 
 let createRecord(record: Record) =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let connection = new SqliteConnection(connectionString(dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "INSERT INTO Records (
@@ -54,7 +61,7 @@ let createRecord(record: Record) =
     connection.Close()
 
 let getRecords() =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let connection = new SqliteConnection(connectionString(dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- "SELECT * FROM Records"
@@ -77,7 +84,7 @@ let getRecords() =
     records
 
 let getRecordsByCategory(category: string)  =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let connection = new SqliteConnection(connectionString(dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "SELECT * FROM Records WHERE Category = '%s'" category
@@ -100,7 +107,7 @@ let getRecordsByCategory(category: string)  =
     records
 
 let getRecordByTitle(title: string): Record option =
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let connection = new SqliteConnection(connectionString(dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "SELECT * FROM Records WHERE Title = '%s'" title
@@ -136,7 +143,7 @@ let getRecordByTitle(title: string): Record option =
     record
 
 let getCategories() = 
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let connection = new SqliteConnection(connectionString(dbPath, "test"))
     connection.Open() 
     let command = connection.CreateCommand()
     command.CommandText <- "SELECT DISTINCT Category FROM Records"
@@ -151,7 +158,7 @@ let getCategories() =
     categories
 
 let deleteRecord(title: string) = 
-    let connection = new SqliteConnection(connectionString("sample.db", "test"))
+    let connection = new SqliteConnection(connectionString(dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "DELETE FROM Records WHERE Title = '%s'" title
