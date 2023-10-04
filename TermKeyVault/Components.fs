@@ -74,9 +74,6 @@ let openFileDialog() =
     Application.Run dialog |> ignore
     dialog.FilePath |> ignore
 
-
-
-
 (* Category table *)
 let categoryTable = 
     let table = new TableView(
@@ -103,13 +100,14 @@ let textFieldDetails =
     tv
 
 (* Context Menu *)
-let showContextMenu(screenPoint: Point, title: string, deleteMethod) = 
+let showContextMenu(screenPoint: Point, record: Record, deleteMethod) = 
     let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
         MenuBarItem ("File",
             [| 
+                MenuItem ("Copy", "", (fun () -> Clipboard.TrySetClipboardData(xorDecrypt(record.Password, 32)) |> ignore)) 
                 MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
                 MenuItem ("Edit", "", (fun () -> showConfig()))
-                MenuItem ("Delete", "", (fun () -> deleteMethod(title)))
+                MenuItem ("Delete", "", (fun () -> deleteMethod(record.Title)))
             |]))
 
     contextMenu.Show() 
@@ -151,9 +149,15 @@ let recordTable =
             table.SetSelection(1, e.MouseEvent.Y - 3, false);
             try
                 let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                showContextMenu(Point(
-                    e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), title, deleteItem)
-                e.Handled <- true
+                let record = Repo.getRecordByTitle(title)
+                match record with
+                | Some record -> 
+                    showContextMenu(Point(
+                        e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), record, deleteItem)
+                    e.Handled <- true
+                | None ->
+                    MessageBox.ErrorQuery("Error", "Record not found", "Ok") |> ignore
+                    e.Handled <- true
             with
             | _ -> ()
     )
