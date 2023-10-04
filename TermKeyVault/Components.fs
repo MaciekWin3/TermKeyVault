@@ -28,6 +28,7 @@ let convertListToDataTable(list: List<Record>) =
         row.[1] <- item.Username
         row.[2] <- maskedPassword 
         row.[3] <- item.Category
+        row.[4] <- item.Url
         table.Rows.Add(row) |> ignore
     )
     table
@@ -73,17 +74,8 @@ let openFileDialog() =
     Application.Run dialog |> ignore
     dialog.FilePath |> ignore
 
-(* Context Menu *)
-let showContextMenu(screenPoint: Point, title: string) = 
-    let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
-        MenuBarItem ("File",
-            [| 
-                MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
-                MenuItem ("Edit", "", (fun () -> showConfig()))
-                MenuItem ("Delete", "", (fun () -> Repo.deleteRecord(title)))
-            |]))
 
-    contextMenu.Show() 
+
 
 (* Category table *)
 let categoryTable = 
@@ -110,6 +102,18 @@ let textFieldDetails =
     tv.ColorScheme <- Colors.Menu
     tv
 
+(* Context Menu *)
+let showContextMenu(screenPoint: Point, title: string, deleteMethod) = 
+    let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
+        MenuBarItem ("File",
+            [| 
+                MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
+                MenuItem ("Edit", "", (fun () -> showConfig()))
+                MenuItem ("Delete", "", (fun () -> deleteMethod(title)))
+            |]))
+
+    contextMenu.Show() 
+
 (* Deaitls frame *)
 let frameView =
     let fv = new FrameView(
@@ -130,6 +134,14 @@ let recordTable =
         Height = Dim.Percent(70f),
         FullRowSelect = true
     )
+
+    (* Context menu action *)
+    let deleteItem(title: string) = 
+        // TODO: Delete item popup
+        Repo.deleteRecord(title)
+        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
+        table.Table <- convertListToDataTable(Repo.getRecords())
+    
     let records = Repo.getRecords()
     table.Style.AlwaysShowHeaders <- true
     table.Table <- convertListToDataTable(records)
@@ -140,7 +152,7 @@ let recordTable =
             try
                 let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
                 showContextMenu(Point(
-                    e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), title)
+                    e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), title, deleteItem)
                 e.Handled <- true
             with
             | _ -> ()

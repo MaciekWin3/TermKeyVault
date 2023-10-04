@@ -16,12 +16,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+	 <!--Compiles first-->
     <Compile Include="Types.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="Cryptography.fs" />
     <Compile Include="Repo.fs" />
     <Compile Include="Components.fs" />
     <Compile Include="Program.fs" />
+    <!--Compiles last-->
   </ItemGroup>
 
   <ItemGroup>
