@@ -1,6 +1,7 @@
 ﻿module Components
 
 open Terminal.Gui
+open System.Timers
 open System.Data
 open System
 
@@ -8,16 +9,14 @@ open Types
 open Repo
 open Cryptography
 open Utils
-open System.Diagnostics
-open System.Timers
 
 let showConfig() = 
     let config = parseConfig()
     MessageBox.Query("Config",
         $"""
-        Db path: {config.DatabasePath}
-        Create: {config.ShouldCreateDatabase}
-        Config: {config.EncryptionKey}
+Db path: {config.DatabasePath}
+Create: {config.ShouldCreateDatabase}
+Config: {config.EncryptionKey}
         """)
         |> ignore
 
@@ -145,8 +144,9 @@ let setClipboardTimer (statusBar: StatusBar) =
 let statusBar = 
     let bar = new StatusBar()
     bar.Items <- [|
-        new StatusItem(Key.CharMask, "Something", fun () -> showConfig())
-        new StatusItem(Key.F1, "", fun () -> showConfig())
+        // TODO: Implements ctrl c on quit app from login window
+        new StatusItem(Key.C ||| Key.CtrlMask, "~CTRL-C~ Quit", fun () -> Application.RequestStop())
+        new StatusItem(Key.CharMask, "", fun  _ -> ())
     |]
     bar
 
@@ -224,7 +224,7 @@ let recordTable =
     table
 
 let showRecordDialog() = 
-    let dialog = new Dialog("Add record", 60, 20)
+    let dialog = new Dialog("Add record", 60, 22)
 
     let record = {
         Id = 0
@@ -277,11 +277,25 @@ let showRecordDialog() =
         Y = Pos.Bottom(passwordLabel),
         Width = Dim.Fill()
     )
+    passwordTextField.Secret <- true
+
+    let confirmPasswordLabel = new Label(
+        Text = "Confirm password: ",
+        X = 0,
+        Y = Pos.Bottom(passwordTextField)
+    )
+
+    let confirmPasswordTextField = new TextField(
+        X = 0,
+        Y = Pos.Bottom(confirmPasswordLabel),
+        Width = Dim.Fill()
+    )
+    confirmPasswordTextField.Secret <- true
 
     let urlLabel = new Label(
         Text = "Url: ",
         X = 0,
-        Y = Pos.Bottom(passwordTextField)
+        Y = Pos.Bottom(confirmPasswordTextField)
     )
 
     let urlTextField = new TextField(
@@ -328,9 +342,16 @@ let showRecordDialog() =
     dialog.Add(titleLabel, titleTextField,
                usernameLabel, usernameTextField,
                passwordLabel, passwordTextField,
+               confirmPasswordLabel, confirmPasswordTextField,
                urlLabel, urlTextField,
                notesLabel, notesTextField,
                categoryLabel, categoryComboBox)
+
+    let validate (password: string, confirmation: string) = 
+        if password <> confirmation then
+            false
+        else
+            true
 
     (* Exit button *)
     let exitButton = new Button("Exit", true)
@@ -339,40 +360,44 @@ let showRecordDialog() =
     (* Create button *)
     let createButton = new Button("Create", true)
     createButton.add_Clicked(fun _ -> 
+        
+        match validate(passwordTextField.Text |> string, confirmPasswordTextField.Text |> string) with
+        | true -> 
+            let salt = generateSalt 32
+            let enteredPassword = passwordTextField.Text
+            let encryptedPassword =
+                enteredPassword
+                |> fun password ->
+                    xorEncrypt(password |> string, 32)
+                |> string
 
-        let salt = generateSalt 32
-        let enteredPassword = passwordTextField.Text
-        let encryptedPassword =
-            enteredPassword
-            |> fun password ->
-                xorEncrypt(password |> string, 32)
-            |> string
+            let c = categoryComboBox.Subviews.[0]
+            let z = categoryComboBox.SelectedItem
+            let x = urlTextField
 
-        let c = categoryComboBox.Subviews.[0]
-        let z = categoryComboBox.SelectedItem
-        let x = urlTextField
+            let updatedRecord = {
+                record with
+                    Title = titleTextField.Text |> string
+                    Username = usernameTextField.Text |> string
+                    Password = encryptedPassword
+                    Url = urlTextField.Text |> string
+                    Notes = notesTextField.Text |> string
+                    Category = categoryComboBox.Text |> string
+                    CreationDate = DateTime.Now
+                    LastModifiedDate = DateTime.Now
+            }
 
-        let updatedRecord = {
-            record with
-                Title = titleTextField.Text |> string
-                Username = usernameTextField.Text |> string
-                Password = encryptedPassword
-                Url = urlTextField.Text |> string
-                Notes = notesTextField.Text |> string
-                Category = categoryComboBox.Text |> string
-                CreationDate = DateTime.Now
-                LastModifiedDate = DateTime.Now
-        }
-
-        createRecord(updatedRecord)
-        categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
-        recordTable.Table <- convertListToDataTable(Repo.getRecords())
-        Application.RequestStop(dialog)
+            createRecord(updatedRecord)
+            categoryTable.Table <- convertListToDataTableCategory(Repo.getCategories())
+            recordTable.Table <- convertListToDataTable(Repo.getRecords())
+            Application.RequestStop(dialog)
+        | false -> MessageBox.ErrorQuery("Error", "Passwords do not match", "Ok") |> ignore
     )
-
     dialog.AddButton(createButton)
     dialog.AddButton(exitButton)
-    Application.Run(dialog) 
+    titleTextField.SetFocus()
+    Application.Run(dialog)  
+
 
 let openPasswordGeneratorDialog() = 
     let dialog = new Dialog("Password generator", 60, 20)
