@@ -117,7 +117,7 @@ let setClipboardTimer (statusBar: StatusBar) =
                 ()
             else
                 let message (time: string) = $"Clipboard will be cleared in {time}"
-                statusBar.Items.[1].Title <- message "00:00:08"
+                statusBar.Items.[2].Title <- message "00:00:08"
                 let mutable elapsedTime = 0.0
                 let timer = new Timer(800.0)
                 timer.AutoReset <- true
@@ -125,13 +125,13 @@ let setClipboardTimer (statusBar: StatusBar) =
                     Application.Refresh()
                     elapsedTime <- elapsedTime + 0.8
                     let timeString = (TimeSpan.FromSeconds(8.0) - TimeSpan.FromSeconds(elapsedTime)).ToString(@"hh\:mm\:ss")
-                    statusBar.Items.[1].Title <- message timeString 
+                    statusBar.Items.[2].Title <- message timeString 
                     if elapsedTime >= 8.0 then
                         timer.Stop()
                         timer.Dispose()
                         Clipboard.TrySetClipboardData("") |> ignore
                         elapsedTime <- 0.0
-                        statusBar.Items.[1].Title <- ""
+                        statusBar.Items.[2].Title <- ""
                         Application.Refresh()
                         isTimerRunning <- false // Reset the flag when the timer completes
                 )
@@ -146,6 +146,7 @@ let statusBar =
     bar.Items <- [|
         // TODO: Implements ctrl c on quit app from login window
         new StatusItem(Key.C ||| Key.CtrlMask, "~CTRL-C~ Quit", fun () -> Application.RequestStop())
+        new StatusItem(Key.Null, $"OS Clipboard IsSupported : {Clipboard.IsSupported}", null)
         new StatusItem(Key.CharMask, "", fun  _ -> ())
     |]
     bar
@@ -156,8 +157,11 @@ let showContextMenu(screenPoint: Point, record: Record, deleteMethod) =
         MenuBarItem ("File",
             [| 
                 MenuItem ("Copy", "", (fun () -> 
-                    Clipboard.TrySetClipboardData(xorDecrypt(record.Password, 32)) |> ignore
-                    setClipboardTimer(statusBar) |> ignore
+                    let preparedPassword = xorDecrypt(record.Password |> string, 32)
+                    let isCopingSuccessfull = Clipboard.TrySetClipboardData(preparedPassword)
+                    match isCopingSuccessfull with
+                    | true -> setClipboardTimer(statusBar) |> ignore
+                    | false -> MessageBox.ErrorQuery("Clipboard", "Failed to copy to clipboard") |> ignore
                 ))
                 MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
                 MenuItem ("Edit", "", (fun () -> showConfig()))
