@@ -47,7 +47,7 @@ let createConfigFile (config: Config) =
         )
     xml.Save(configPath)
 
-let parseConfig() =
+let getConfig() =
     let appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
     let configDir = Path.Combine(appDataPath, "termkeyvault")
     let configPath = Path.Combine(configDir, "config.xml")

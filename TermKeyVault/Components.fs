@@ -10,8 +10,10 @@ open Repo
 open Cryptography
 open Utils
 
+
+// Config related stuff
 let showConfig() = 
-    let config = parseConfig()
+    let config = getConfig()
     MessageBox.Query("Config",
         $"""
 Db path: {config.DatabasePath}
@@ -20,6 +22,16 @@ Config: {config.EncryptionKey}
         """)
         |> ignore
 
+let getEncryptionKey = 
+    let config = getConfig()
+    let key = config.EncryptionKey
+    let encryptionKey =
+        match key with
+        | 0 -> 32
+        | key -> key
+    encryptionKey
+
+// Table
 let convertListToDataTable(list: List<Record>) =
     let table = new DataTable()
     table.Columns.Add("Title") |> ignore
@@ -28,7 +40,7 @@ let convertListToDataTable(list: List<Record>) =
     table.Columns.Add("Category") |> ignore
     table.Columns.Add("Url") |> ignore
     list |> List.iter (fun item -> 
-        let decryptedPassword = xorDecrypt (item.Password, 32)
+        let decryptedPassword = xorDecrypt (item.Password, getEncryptionKey)
         let maskedPassword = new string('*', decryptedPassword.Length)
         let row = table.NewRow()
         row.[0] <- item.Title
@@ -157,7 +169,7 @@ let showContextMenu(screenPoint: Point, record: Record, deleteMethod) =
         MenuBarItem ("File",
             [| 
                 MenuItem ("Copy", "", (fun () -> 
-                    let preparedPassword = xorDecrypt(record.Password |> string, 32)
+                    let preparedPassword = xorDecrypt(record.Password |> string, getEncryptionKey)
                     let isCopingSuccessfull = Clipboard.TrySetClipboardData(preparedPassword)
                     match isCopingSuccessfull with
                     | true -> setClipboardTimer(statusBar) |> ignore
@@ -372,7 +384,7 @@ let showRecordDialog() =
             let encryptedPassword =
                 enteredPassword
                 |> fun password ->
-                    xorEncrypt(password |> string, 32)
+                    xorEncrypt(password |> string, getEncryptionKey)
                 |> string
 
             let c = categoryComboBox.Subviews.[0]
