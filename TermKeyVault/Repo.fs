@@ -11,6 +11,9 @@ let dbPath =
     let dbPath = Path.Combine(configDir, "termkeyvault.db")
     dbPath
 
+let checkIfDbExists() =
+    File.Exists(dbPath)
+
 let connectionString(file: string, password: string)= sprintf "Data Source=file:%s;Password=%s;" file password
 
 let checkPassword(password: string) =
