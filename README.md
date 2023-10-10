@@ -12,19 +12,20 @@ It is by no means secure (although it uses encrypted SQLite database and uses ba
 ## Installation 📦
 Will be provided when the project is ready for use.
 
-## Usage 🧰
+## Usage 🧑‍💻 
 To use TermKeyVault type `tkv` in terminal. You will be prompted to enter your master password. If you are using TermKeyVault for the first time, you will be asked to create a new database. After that you will be presented with the main menu.
 
-## TechStack 🛠️
+## TechStack 📚
 - [F#](https://fsharp.org/)
 - [SQLite](https://www.sqlite.org/index.html)
 - [Terminal.Gui](https://github.com/gui-cs/Terminal.Gui)
 
-## Developemnt
+## Development 🛠️
 To get started clone the repository:
 ```bash
 git clone https://github.com/MaciekWin3/TermKeyVault
 ```
+And you are ready to go! Just bare in mind that if you are using TermKeyVault as a password manager, your development setup will conflict with your production setup.
 
 # Contributing 🤝
 If you want to contribute to this project, feel free to do so. I am open to any suggestions and improvements.
