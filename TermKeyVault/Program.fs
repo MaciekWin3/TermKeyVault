@@ -1,8 +1,9 @@
 ﻿module Program
 
 open Terminal.Gui
-open Components
 open Repo
+open Components.CreateDatabaseWizard
+open Components.LoginWindow
 
 [<EntryPoint>]
 let initApp _ = 
