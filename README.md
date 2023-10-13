@@ -9,6 +9,9 @@ TermKeyValut is still in development and is not ready for use. Do not have high 
 TermKeyValut is my side project to explore [Functional Programming](https://en.wikipedia.org/wiki/Functional_programming), [F#](https://fsharp.org/) and how it works with [Terminal.Gui](https://github.com/gui-cs/Terminal.Gui). The idea is to create a password manager that is easy to use and can be used in the terminal.
 It is by no means secure (although it uses encrypted SQLite database and uses basic encryption) and if your main goal is to have a secure password manager, I would recommend using [KeePass](https://keepass.info/), from which I drew inspiration while developing this application.
 
+## Demo 🎥
+Soon...
+
 ## Installation 📦
 Will be provided when the project is ready for use.
 
@@ -26,6 +29,7 @@ To get started clone the repository:
 git clone https://github.com/MaciekWin3/TermKeyVault
 ```
 And you are ready to go! Just bare in mind that if you are using TermKeyVault as a password manager, your development setup will conflict with your production setup.
+Also I recommend using [DB Browser for SQLite](https://sqlitebrowser.org/) to access encrytpted SQLite database.
 
 # Contributing 🤝
 If you want to contribute to this project, feel free to do so. I am open to any suggestions and improvements.

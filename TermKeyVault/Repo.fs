@@ -158,7 +158,7 @@ let getCategories() =
         categories <- category :: categories
 
     connection.Close()
-    categories
+    ["All"] @ categories
 
 let deleteRecord(title: string) = 
     let connection = new SqliteConnection(connectionString(dbPath, "test"))

@@ -252,14 +252,17 @@ module RecordTable =
 
         table.add_SelectedCellChanged(fun e -> 
             let row = e.NewRow
-            let title = e.Table.Rows[row][0]
-            let username = e.Table.Rows[row][1]
-            let password  = e.Table.Rows[row][2]
-            let category = e.Table.Rows[row][3]
-            let url = e.Table.Rows[row][4]
-            let notes = e.Table.Rows[row][5]
-            let text = $"Title: {title}, User Name: {username}, Password: {password}, Category: {category}, Url: {url}, Notes: {notes}"
-            textFieldDetails.Text <- text 
+            if row < 0 then
+                textFieldDetails.Text <- ""
+            else
+                let title = e.Table.Rows[row][0]
+                let username = e.Table.Rows[row][1]
+                let password  = e.Table.Rows[row][2]
+                let category = e.Table.Rows[row][3]
+                let url = e.Table.Rows[row][4]
+                let notes = e.Table.Rows[row][5]
+                let text = $"Title: {title}, User Name: {username}, Password: {password}, Category: {category}, Url: {url}, Notes: {notes}"
+                textFieldDetails.Text <- text 
         )
         table
 
@@ -545,6 +548,10 @@ module Navbar =
                 MenuBarItem ("Tools",
                     [| MenuItem ("Password generator", "", (fun () -> openPasswordGeneratorDialog()))
                        MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
+                MenuBarItem ("Groups",
+                    [| MenuItem ("Add Group", "", (fun () -> openPasswordGeneratorDialog()))
+                       MenuItem ("Edit Group", "", (fun() -> raise (new NotImplementedException())))
+                       MenuItem ("Delete Group", "", (fun() -> raise (new NotImplementedException()))) |])
                 MenuBarItem ("Records",
                     [| MenuItem ("Add record", "", (fun () -> showCreateRecordDialog()))
                        MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
@@ -554,10 +561,18 @@ module Navbar =
                        MenuItem ("Website", "", (fun () -> openUrl("https://github.com/MaciekWin3/TermKeyVault#readme") |> ignore)) |])
             |])
 
+    let updateRecordTable (name: string) =
+        let records =
+            match name with
+            | "All" -> Repo.getRecords()
+            | _ -> Repo.getRecordsByCategory name
+
+        recordTable.Table <- records |> convertListToDataTable 
+
     categoryTable.add_SelectedCellChanged(fun e -> 
         let row = e.NewRow
-        let name = e.Table.Rows[row][0]
-        recordTable.Table <- convertListToDataTable(Repo.getRecordsByCategory (name.ToString()))
+        let name = e.Table.Rows[row][0] |> string
+        updateRecordTable name
     )
 
 
