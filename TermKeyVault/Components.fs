@@ -529,6 +529,27 @@ module PasswordGenerator =
         dialog.AddButton exitButton 
         Application.Run dialog
 
+module Categories = 
+    let openCreateCategoryDialog() = 
+        let dialog = new Dialog("Create category", 60, 20)
+        let categoryNameLabel = new Label(
+            Text = "Category name: ",
+            X = 0,
+            Y = 0
+        )
+
+        let categoryNameTextField = new TextField(
+            Text = "",
+            X = 0,
+            Y = Pos.Bottom(categoryNameLabel),
+            Width = Dim.Fill()
+        )
+
+        dialog.Add(categoryNameLabel, categoryNameTextField)
+        Application.Run dialog
+
+
+
 module Navbar = 
     open InspectDialog
     open PasswordGenerator
@@ -536,8 +557,8 @@ module Navbar =
     open Config
     open CategoryTable
     open RecordTable
-    open DetailsFrame
     open TableDataConversions
+    open Categories
 
     let menu = 
         new MenuBar(
@@ -548,10 +569,10 @@ module Navbar =
                 MenuBarItem ("Tools",
                     [| MenuItem ("Password generator", "", (fun () -> openPasswordGeneratorDialog()))
                        MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
-                MenuBarItem ("Groups",
-                    [| MenuItem ("Add Group", "", (fun () -> openPasswordGeneratorDialog()))
-                       MenuItem ("Edit Group", "", (fun() -> raise (new NotImplementedException())))
-                       MenuItem ("Delete Group", "", (fun() -> raise (new NotImplementedException()))) |])
+                MenuBarItem ("Category",
+                    [| MenuItem ("Add category", "", (fun () -> openCreateCategoryDialog()))
+                       MenuItem ("Edit category", "", (fun() -> raise (new NotImplementedException())))
+                       MenuItem ("Delete category", "", (fun() -> raise (new NotImplementedException()))) |])
                 MenuBarItem ("Records",
                     [| MenuItem ("Add record", "", (fun () -> showCreateRecordDialog()))
                        MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
