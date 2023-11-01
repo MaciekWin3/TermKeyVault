@@ -7,8 +7,6 @@ open Components.LoginWindow
 
 [<EntryPoint>]
 let initApp _ = 
-    //Repo.prepareDb("test")
-    //Repo.insertTestData()
     Application.Init()
     Colors.Base <- Colors.TopLevel
     let isDbCreated = checkIfDbExists()

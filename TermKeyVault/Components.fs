@@ -102,12 +102,20 @@ module CategoryTable =
     open TableDataConversions
 
     let categoryTable = 
+        let Win = new Window("Example window for colors")
         let table = new TableView(
             X = 0,
             Y = 0,
             Width = Dim.Percent(25f),
             Height = Dim.Percent(70f),
-            FullRowSelect = true
+            FullRowSelect = true,
+            ColorScheme = new ColorScheme(
+                HotNormal = Win.ColorScheme.HotNormal,
+                Focus = Win.ColorScheme.Focus,
+                HotFocus = Attribute.Make(Color.Blue, Color.Gray),
+                Disabled = Win.ColorScheme.Disabled,
+                Normal = Win.ColorScheme.Normal
+            )
         )
         table.Style.AlwaysShowHeaders <- true
         table.Table <- convertListToDataTableCategory(Repo.getCategories())
@@ -195,12 +203,21 @@ module RecordTable =
     open DetailsFrame
 
     let recordTable = 
+        let Win = new Window("Example window for colors")
         let table = new TableView(
             X = Pos.Right(categoryTable),
             Y = 0,
             Width = Dim.Percent(75f),
             Height = Dim.Percent(70f),
-            FullRowSelect = true
+            FullRowSelect = true,
+            // define me diffrent color scheme
+            ColorScheme = new ColorScheme(
+                HotNormal = Win.ColorScheme.HotNormal,
+                Focus = Win.ColorScheme.Focus,
+                HotFocus = Attribute.Make(Color.Blue, Color.Gray),
+                Disabled = Win.ColorScheme.Disabled,
+                Normal = Win.ColorScheme.Normal
+            )
         )
 
         let showContextMenu(screenPoint: Point, record: Record, deleteMethod) = 
@@ -229,6 +246,7 @@ module RecordTable =
             table.Table <- convertListToDataTable(Repo.getRecords())
         
         let records = Repo.getRecords()
+
         table.Style.AlwaysShowHeaders <- true
         table.Table <- convertListToDataTable(records)
         table.add_CellActivated(action)
@@ -410,20 +428,14 @@ module CreateRecordDialog =
         (* Create button *)
         let createButton = new Button("Create", true)
         createButton.add_Clicked(fun _ -> 
-            
             match validate(passwordTextField.Text |> string, confirmPasswordTextField.Text |> string) with
             | true -> 
-                let salt = generateSalt 32
                 let enteredPassword = passwordTextField.Text
                 let encryptedPassword =
                     enteredPassword
                     |> fun password ->
                         xorEncrypt(password |> string, getEncryptionKey())
                     |> string
-
-                let c = categoryComboBox.Subviews.[0]
-                let z = categoryComboBox.SelectedItem
-                let x = urlTextField
 
                 let updatedRecord = {
                     record with
@@ -432,7 +444,7 @@ module CreateRecordDialog =
                         Password = encryptedPassword
                         Url = urlTextField.Text |> string
                         Notes = notesTextField.Text |> string
-                        Category = categoryComboBox.Text |> string
+                        Category = categoryComboBox.SearchText |> string
                         CreationDate = DateTime.Now
                         LastModifiedDate = DateTime.Now
                 }
