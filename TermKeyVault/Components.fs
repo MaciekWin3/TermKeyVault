@@ -77,12 +77,6 @@ module StatusBar =
         |]
         bar
 
-module TableDataConversions = 
-    open Config
-
-
-
-
 module Categories = 
     module CategoryTable =  
         let convertListToDataTableOfCategories(list: List<string>) =
@@ -117,42 +111,9 @@ module Categories =
 
 
 
-module InspectDialog = 
-    let inspectRecordDialog (record: Record) = 
-        let dialog = new Dialog(record.Title, 80, 20)
-        let titleLabel = new Label(
-            Text = Cryptography.xorDecrypt(record.Password, 32),
-            X = 0,
-            Y = 1
-        )
-
-        dialog.Add(titleLabel)
-        Application.Run dialog
-
-    let action (e: TableView.CellActivatedEventArgs) = 
-        let row = e.Row
-        let name = e.Table.Rows.[row].[0]
-        match name with
-        | :? string as str ->
-            let record = Repo.getRecordByTitle(str)
-            match record with
-            | Some record -> 
-                inspectRecordDialog(record)
-            | None ->
-                ()
-        | _ ->
-            ()
-
-    let openFileDialog() = 
-        let dialog = new OpenDialog("Open", "Open a file")
-        dialog.DirectoryPath <- "/home"
-        Application.Run dialog |> ignore
-        dialog.FilePath |> ignore
-
-
-
 module DetailsFrame = 
     open Categories.CategoryTable
+
     let textFieldDetails = 
         let tv = new TextView(
             X = 0,
@@ -176,139 +137,25 @@ module DetailsFrame =
         fv.Add(textFieldDetails)
         fv
 
-
-
-module RecordTable = 
-    open Categories.CategoryTable
-    open Config
-    open ClipboardTimer
-    open StatusBar
-    open InspectDialog
-    open DetailsFrame
-
-    let convertListToDataTableOfRecords(list: List<Record>) =
-        let table = new DataTable()
-        table.Columns.Add("Title") |> ignore
-        table.Columns.Add("Username") |> ignore
-        table.Columns.Add("Password") |> ignore
-        table.Columns.Add("Category") |> ignore
-        table.Columns.Add("Url") |> ignore
-        table.Columns.Add("Notes") |> ignore
-        list |> List.iter (fun item -> 
-            let decryptedPassword = xorDecrypt (item.Password, getEncryptionKey())
-            let maskedPassword = new string('*', decryptedPassword.Length)
-            let row = table.NewRow()
-            row.[0] <- item.Title
-            row.[1] <- item.Username
-            row.[2] <- maskedPassword 
-            row.[3] <- item.Category
-            row.[4] <- item.Url
-            row.[5] <- item.Notes
-            table.Rows.Add(row) |> ignore
-        )
-        table
-
-    let recordTable = 
-        let Win = new Window("Example window for colors")
-        let table = new TableView(
-            X = Pos.Right(categoryTable),
-            Y = 0,
-            Width = Dim.Percent(75f),
-            Height = Dim.Percent(70f),
-            FullRowSelect = true,
-            ColorScheme = new ColorScheme(
-                HotNormal = Win.ColorScheme.HotNormal,
-                Focus = Win.ColorScheme.Focus,
-                HotFocus = Attribute.Make(Color.Blue, Color.Gray),
-                Disabled = Win.ColorScheme.Disabled,
-                Normal = Win.ColorScheme.Normal
-            )
-        )
-
-        let showContextMenu(screenPoint: Point, record: Record, deleteMethod) = 
-            let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
-                MenuBarItem ("File",
-                    [| 
-                        MenuItem ("Copy", "", (fun () -> 
-                            let preparedPassword = xorDecrypt(record.Password |> string, getEncryptionKey())
-                            let isCopingSuccessfull = Clipboard.TrySetClipboardData(preparedPassword)
-                            match isCopingSuccessfull with
-                            | true -> setClipboardTimer(statusBar) |> ignore
-                            | false -> MessageBox.ErrorQuery("Clipboard", "Failed to copy to clipboard") |> ignore
-                        ))
-                        MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
-                        MenuItem ("Edit", "", (fun () -> showConfig()))
-                        MenuItem ("Delete", "", (fun () -> deleteMethod(record.Title)))
-                    |]))
-
-            contextMenu.Show() 
-
-        (* Context menu action *)
-        let deleteItem(title: string) = 
-            // TODO: Delete item popup
-            Repo.deleteRecord(title)
-            categoryTable.Table <- convertListToDataTableOfCategories(Repo.getCategories())
-            table.Table <- convertListToDataTableOfRecords(Repo.getRecords())
-        
-        let records = Repo.getRecords()
-
-        table.Style.AlwaysShowHeaders <- true
-        table.Table <- convertListToDataTableOfRecords(records)
-        table.add_CellActivated(action)
-        table.add_MouseClick(fun e -> 
-            if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
-                table.SetSelection(1, e.MouseEvent.Y - 3, false);
-                try
-                    let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                    let record = Repo.getRecordByTitle(title)
-                    match record with
-                    | Some record -> 
-                        showContextMenu(Point(
-                            e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), record, deleteItem)
-                        e.Handled <- true
-                    | None ->
-                        MessageBox.ErrorQuery("Error", "Record not found", "Ok") |> ignore
-                        e.Handled <- true
-                with
-                | _ -> ()
-        )
-
-        table.add_SelectedCellChanged(fun e -> 
-            let row = e.NewRow
-            if row < 0 then
-                textFieldDetails.Text <- ""
-            else
-                let title = e.Table.Rows[row][0]
-                let username = e.Table.Rows[row][1]
-                let password  = e.Table.Rows[row][2]
-                let category = e.Table.Rows[row][3]
-                let url = e.Table.Rows[row][4]
-                let notes = e.Table.Rows[row][5]
-                let text = $"Title: {title}, User Name: {username}, Password: {password}, Category: {category}, Url: {url}, Notes: {notes}"
-                textFieldDetails.Text <- text 
-        )
-        table
-
 module CreateRecordDialog = 
-    open RecordTable
-    open Categories.CategoryTable
     open Config
-    open TableDataConversions
-
-    let showCreateRecordDialog() = 
+    let showCreateRecordDialog(r: Record option, a) = 
         let dialog = new Dialog("Add record", 60, 22)
 
-        let record = {
-            Id = 0
-            Title = ""
-            Username = ""
-            Password = ""
-            Url = ""
-            Notes = ""
-            Category = ""
-            CreationDate = DateTime.Now 
-            LastModifiedDate = DateTime.Now 
-        }
+        let record = 
+            match r with
+            | Some r -> r
+            | None -> {
+                Id = 0
+                Title = ""
+                Username = ""
+                Password = ""
+                Url = ""
+                Notes = ""
+                Category = ""
+                CreationDate = DateTime.Now 
+                LastModifiedDate = DateTime.Now 
+            }
 
         (* Title *)
         let titleLabel = new Label(
@@ -455,15 +302,160 @@ module CreateRecordDialog =
                 }
 
                 createRecord(updatedRecord)
-                categoryTable.Table <- convertListToDataTableOfCategories(Repo.getCategories())
-                recordTable.Table <- convertListToDataTableOfRecords(Repo.getRecords())
-                Application.RequestStop(dialog)
+                Application.RequestStop(dialog) 
             | false -> MessageBox.ErrorQuery("Error", "Passwords do not match", "Ok") |> ignore
         )
         dialog.AddButton(createButton)
         dialog.AddButton(exitButton)
         titleTextField.SetFocus()
         Application.Run(dialog)  
+
+module InspectDialog = 
+    open CreateRecordDialog
+    let inspectRecordDialog (record: Record) = 
+        let dialog = new Dialog(record.Title, 80, 20)
+        let titleLabel = new Label(
+            Text = Cryptography.xorDecrypt(record.Password, 32),
+            X = 0,
+            Y = 1
+        )
+
+        dialog.Add(titleLabel)
+        Application.Run dialog
+
+    let x = 2
+
+    let action (e: TableView.CellActivatedEventArgs) = 
+        let row = e.Row
+        let name = e.Table.Rows.[row].[0]
+        match name with
+        | :? string as str ->
+            let record = Repo.getRecordByTitle(str)
+            match record with
+            | Some record -> 
+                showCreateRecordDialog(Some record, x)
+            | None ->
+                ()
+        | _ ->
+            ()
+
+    let openFileDialog() = 
+        let dialog = new OpenDialog("Open", "Open a file")
+        dialog.DirectoryPath <- "/home"
+        Application.Run dialog |> ignore
+        dialog.FilePath |> ignore
+
+module RecordTable = 
+    open Categories.CategoryTable
+    open Config
+    open ClipboardTimer
+    open StatusBar
+    open InspectDialog
+    open DetailsFrame
+
+    let convertListToDataTableOfRecords(list: List<Record>) =
+        let table = new DataTable()
+        table.Columns.Add("Title") |> ignore
+        table.Columns.Add("Username") |> ignore
+        table.Columns.Add("Password") |> ignore
+        table.Columns.Add("Category") |> ignore
+        table.Columns.Add("Url") |> ignore
+        table.Columns.Add("Notes") |> ignore
+        list |> List.iter (fun item -> 
+            let decryptedPassword = xorDecrypt (item.Password, getEncryptionKey())
+            let maskedPassword = new string('*', decryptedPassword.Length)
+            let row = table.NewRow()
+            row.[0] <- item.Title
+            row.[1] <- item.Username
+            row.[2] <- maskedPassword 
+            row.[3] <- item.Category
+            row.[4] <- item.Url
+            row.[5] <- item.Notes
+            table.Rows.Add(row) |> ignore
+        )
+        table
+
+    let recordTable = 
+        let Win = new Window("Example window for colors")
+        let table = new TableView(
+            X = Pos.Right(categoryTable),
+            Y = 0,
+            Width = Dim.Percent(75f),
+            Height = Dim.Percent(70f),
+            FullRowSelect = true,
+            ColorScheme = new ColorScheme(
+                HotNormal = Win.ColorScheme.HotNormal,
+                Focus = Win.ColorScheme.Focus,
+                HotFocus = Attribute.Make(Color.Blue, Color.Gray),
+                Disabled = Win.ColorScheme.Disabled,
+                Normal = Win.ColorScheme.Normal
+            )
+        )
+
+        let showContextMenu(screenPoint: Point, record: Record, deleteMethod) = 
+            let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
+                MenuBarItem ("File",
+                    [| 
+                        MenuItem ("Copy", "", (fun () -> 
+                            let preparedPassword = xorDecrypt(record.Password |> string, getEncryptionKey())
+                            let isCopingSuccessfull = Clipboard.TrySetClipboardData(preparedPassword)
+                            match isCopingSuccessfull with
+                            | true -> setClipboardTimer(statusBar) |> ignore
+                            | false -> MessageBox.ErrorQuery("Clipboard", "Failed to copy to clipboard") |> ignore
+                        ))
+                        MenuItem ("Inspect", "", (fun () -> openFileDialog())) 
+                        MenuItem ("Edit", "", (fun () -> showConfig()))
+                        MenuItem ("Delete", "", (fun () -> deleteMethod(record.Title)))
+                    |]))
+
+            contextMenu.Show() 
+
+        let refreshTables() = 
+            categoryTable.Table <- convertListToDataTableOfCategories(Repo.getCategories())
+            table.Table <- convertListToDataTableOfRecords(Repo.getRecords())
+            
+        let deleteItem(title: string) = 
+            // TODO: Delete item popup
+            Repo.deleteRecord(title)
+            refreshTables()
+        
+        let records = Repo.getRecords()
+        table.Style.AlwaysShowHeaders <- true
+        table.Table <- convertListToDataTableOfRecords(records)
+        table.add_CellActivated(action)
+        table.add_MouseClick(fun e -> 
+            if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
+                table.SetSelection(1, e.MouseEvent.Y - 3, false);
+                try
+                    let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
+                    let record = Repo.getRecordByTitle(title)
+                    match record with
+                    | Some record -> 
+                        showContextMenu(Point(
+                            e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2), record, deleteItem)
+                        e.Handled <- true
+                    | None ->
+                        MessageBox.ErrorQuery("Error", "Record not found", "Ok") |> ignore
+                        e.Handled <- true
+                with
+                | _ -> ()
+        )
+
+        table.add_SelectedCellChanged(fun e -> 
+            let row = e.NewRow
+            if row < 0 then
+                textFieldDetails.Text <- ""
+            else
+                let title = e.Table.Rows[row][0]
+                let username = e.Table.Rows[row][1]
+                let password  = e.Table.Rows[row][2]
+                let category = e.Table.Rows[row][3]
+                let url = e.Table.Rows[row][4]
+                let notes = e.Table.Rows[row][5]
+                let text = $"Title: {title}, User Name: {username}, Password: {password}, Category: {category}, Url: {url}, Notes: {notes}"
+                textFieldDetails.Text <- text 
+        )
+        table
 
 
 module PasswordGenerator = 
@@ -568,7 +560,7 @@ module Navbar =
                        MenuItem ("Edit category", "", (fun() -> raise (new NotImplementedException())))
                        MenuItem ("Delete category", "", (fun() -> raise (new NotImplementedException()))) |])
                 MenuBarItem ("Records",
-                    [| MenuItem ("Add record", "", (fun () -> showCreateRecordDialog()))
+                    [| MenuItem ("Add record", "", (fun () -> showCreateRecordDialog(None, null)))
                        MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
                 MenuBarItem ("Help",
                     [| MenuItem ("About", "",(fun () -> openUrl("https://github.com/MaciekWin3/TermKeyVault") |> ignore))
