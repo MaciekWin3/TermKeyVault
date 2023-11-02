@@ -2,8 +2,8 @@
 
 open Terminal.Gui
 open Repo
-open Components.CreateDatabaseWizard
-open Components.LoginWindow
+open Orchestrator.LoginWindow
+open Orchestrator.CreateDatabaseWizard
 
 [<EntryPoint>]
 let initApp _ = 
