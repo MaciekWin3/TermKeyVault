@@ -10,6 +10,10 @@ open Repo
 open Cryptography
 open Utils
 
+type DialogType = 
+    | Add
+    | Edit
+
 module Config = 
     let showConfig() = 
         let config = getConfig()
@@ -38,7 +42,7 @@ module ClipboardTimer =
         Application.MainLoop.Invoke(fun () -> 
             lock timerLock (fun () ->
                 if isTimerRunning then
-                    MessageBox.ErrorQuery("Timer", "Timer is already running") |> ignore
+                    MessageBox.ErrorQuery("Timer", "Timer is already running", "Ok") |> ignore
                     ()
                 else
                     let message (time: string) = $"Clipboard will be cleared in {time}"
@@ -63,7 +67,6 @@ module ClipboardTimer =
                     timer.Start()
                     isTimerRunning <- true
             )
-            ()
         )
 
 module StatusBar = 
@@ -109,8 +112,6 @@ module Categories =
             table.Table <- convertListToDataTableOfCategories(Repo.getCategories())
             table
 
-
-
 module DetailsFrame = 
     open Categories.CategoryTable
 
@@ -137,10 +138,12 @@ module DetailsFrame =
         fv.Add(textFieldDetails)
         fv
 
-module CreateRecordDialog = 
+module RecordDialog = 
     open Config
-    let showCreateRecordDialog(r: Record option, a) = 
-        let dialog = new Dialog("Add record", 60, 22)
+
+    let showCreateRecordDialog(r: Record option, dialogType: DialogType, onFinish) = 
+        let title = if r = None then "Add record" else "Edit record" 
+        let dialog = new Dialog(title, 60, 22)
 
         let record = 
             match r with
@@ -204,7 +207,9 @@ module CreateRecordDialog =
             Y = Pos.Bottom(passwordTextField)
         )
 
+        let confirmPassword = if dialogType = DialogType.Edit then record.Password else "" 
         let confirmPasswordTextField = new TextField(
+            Text = confirmPassword,
             X = 0,
             Y = Pos.Bottom(confirmPasswordLabel),
             Width = Dim.Fill()
@@ -251,13 +256,16 @@ module CreateRecordDialog =
                 Height = Dim.Fill(1)
             )
 
-            let categories =
-                ["General"; "Social Media"; "Work"]
-                |> List.toArray
+            let categories = 
+                Repo.getCategories() 
+                |> List.toArray 
+                |> Array.filter ((<>) "All")
 
             cb.SetSource(categories);
+            if dialogType = DialogType.Edit then
+                let index = Array.findIndex ((=) record.Category) categories
+                cb.SelectedItem <- index
             cb
-
 
         dialog.Add(titleLabel, titleTextField,
                    usernameLabel, usernameTextField,
@@ -268,18 +276,19 @@ module CreateRecordDialog =
                    categoryLabel, categoryComboBox)
 
         let validate (password: string, confirmation: string) = 
-            if password <> confirmation then
-                false
-            else
-                true
+            password = confirmation
 
         (* Exit button *)
         let exitButton = new Button("Exit", true)
         exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
 
-        (* Create button *)
-        let createButton = new Button("Create", true)
-        createButton.add_Clicked(fun _ -> 
+        (* Action button *)
+        let actionButtonTitle = 
+            match dialogType with
+            | Add -> "Create"
+            | Edit -> "Update"
+        let actionButton = new Button(actionButtonTitle, true)
+        actionButton.add_Clicked(fun _ -> 
             match validate(passwordTextField.Text |> string, confirmPasswordTextField.Text |> string) with
             | true -> 
                 let enteredPassword = passwordTextField.Text
@@ -301,29 +310,20 @@ module CreateRecordDialog =
                         LastModifiedDate = DateTime.Now
                 }
 
-                createRecord(updatedRecord)
+                match dialogType with
+                | Add -> createRecord(updatedRecord)
+                | Edit -> updateRecord(record.Title, updatedRecord)
+                onFinish()
                 Application.RequestStop(dialog) 
             | false -> MessageBox.ErrorQuery("Error", "Passwords do not match", "Ok") |> ignore
         )
-        dialog.AddButton(createButton)
+        dialog.AddButton(actionButton)
         dialog.AddButton(exitButton)
         titleTextField.SetFocus()
         Application.Run(dialog)  
 
 module InspectDialog = 
-    open CreateRecordDialog
-    let inspectRecordDialog (record: Record) = 
-        let dialog = new Dialog(record.Title, 80, 20)
-        let titleLabel = new Label(
-            Text = Cryptography.xorDecrypt(record.Password, 32),
-            X = 0,
-            Y = 1
-        )
-
-        dialog.Add(titleLabel)
-        Application.Run dialog
-
-    let x = 2
+    open RecordDialog
 
     let action (e: TableView.CellActivatedEventArgs) = 
         let row = e.Row
@@ -333,7 +333,7 @@ module InspectDialog =
             let record = Repo.getRecordByTitle(str)
             match record with
             | Some record -> 
-                showCreateRecordDialog(Some record, x)
+                showCreateRecordDialog(Some record, DialogType.Edit, fun() -> Application.Refresh())
             | None ->
                 ()
         | _ ->
@@ -392,6 +392,10 @@ module RecordTable =
             )
         )
 
+        let refreshTables() = 
+            categoryTable.Table <- convertListToDataTableOfCategories(Repo.getCategories())
+            table.Table <- convertListToDataTableOfRecords(Repo.getRecords())
+
         let showContextMenu(screenPoint: Point, record: Record, deleteMethod) = 
             let contextMenu = new ContextMenu(screenPoint.X, screenPoint.Y,
                 MenuBarItem ("File",
@@ -410,10 +414,6 @@ module RecordTable =
 
             contextMenu.Show() 
 
-        let refreshTables() = 
-            categoryTable.Table <- convertListToDataTableOfCategories(Repo.getCategories())
-            table.Table <- convertListToDataTableOfRecords(Repo.getRecords())
-            
         let deleteItem(title: string) = 
             // TODO: Delete item popup
             Repo.deleteRecord(title)
@@ -457,6 +457,9 @@ module RecordTable =
         )
         table
 
+    let refreshTables() = 
+        categoryTable.Table <- convertListToDataTableOfCategories(Repo.getCategories())
+        recordTable.Table <- convertListToDataTableOfRecords(Repo.getRecords())
 
 module PasswordGenerator = 
     let openPasswordGeneratorDialog() = 
@@ -541,7 +544,7 @@ module PasswordGenerator =
 module Navbar = 
     open InspectDialog
     open PasswordGenerator
-    open CreateRecordDialog
+    open RecordDialog
     open Config
     open Categories.CategoryTable
     open RecordTable
@@ -560,7 +563,7 @@ module Navbar =
                        MenuItem ("Edit category", "", (fun() -> raise (new NotImplementedException())))
                        MenuItem ("Delete category", "", (fun() -> raise (new NotImplementedException()))) |])
                 MenuBarItem ("Records",
-                    [| MenuItem ("Add record", "", (fun () -> showCreateRecordDialog(None, null)))
+                    [| MenuItem ("Add record", "", (fun () -> showCreateRecordDialog(None, DialogType.Add, refreshTables)))
                        MenuItem ("Paste", "", Unchecked.defaultof<_>) |])
                 MenuBarItem ("Help",
                     [| MenuItem ("About", "",(fun () -> openUrl("https://github.com/MaciekWin3/TermKeyVault") |> ignore))
@@ -581,6 +584,4 @@ module Navbar =
         let name = e.Table.Rows[row][0] |> string
         updateRecordTable name
     )
-
-
 

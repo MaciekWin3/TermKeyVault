@@ -30,10 +30,9 @@ let prepareDb(password: string) =
     connection.Open()
     let command = connection.CreateCommand()
     try
-        // TODO: Make title unique
         command.CommandText <- "Create Table Records (
             Id INTEGER  primary key autoincrement,
-            Title varchar(255), 
+            Title varchar(255) UNIQUE, 
             Username varchar(255),
             Password varchar(255),
             Url varchar(255),
@@ -47,7 +46,7 @@ let prepareDb(password: string) =
     connection.Close()
 
 let createRecord(record: Record) =
-    let connection = new SqliteConnection(connectionString(dbPath, "test"))
+    use connection = new SqliteConnection(connectionString(dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "INSERT INTO Records (
@@ -60,6 +59,37 @@ let createRecord(record: Record) =
         CreationDate,
         LastModifiedDate)
         VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" record.Title record.Username record.Password record.Url record.Notes record.Category (record.CreationDate.ToString()) (record.LastModifiedDate.ToString())
+    command.ExecuteNonQuery() |> ignore
+    connection.Close()
+
+let updateRecord(title: string, updatedRecord: Record) =
+    use connection = new SqliteConnection(connectionString(dbPath, "test"))
+    connection.Open()
+    let command = connection.CreateCommand()
+    
+    // Construct the SQL update statement
+    command.CommandText <- sprintf "UPDATE Records
+         SET Title = '%s',
+             Username = '%s',
+             Password = '%s',
+             Url = '%s',
+             Notes = '%s',
+             Category = '%s',
+             CreationDate = '%s',
+             LastModifiedDate = '%s'
+         WHERE Title= '%s'" 
+         updatedRecord.Title 
+         updatedRecord.Username 
+         updatedRecord.Password 
+         updatedRecord.Url 
+         updatedRecord.Notes 
+         updatedRecord.Category 
+         (updatedRecord.CreationDate.ToString()) 
+         (DateTime.Now.ToString()) 
+         title
+
+    Console.WriteLine(command.CommandText)
+
     command.ExecuteNonQuery() |> ignore
     connection.Close()
 
