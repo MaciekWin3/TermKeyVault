@@ -53,18 +53,18 @@ let generatePassword (parameters: PasswordParams) : string =
 
     password
 
-let xorEncrypt (text: string, encryptionKey: int): string =
+let xorEncrypt (text: string, encryptionKey: int) : string =
     let encryptedText =
-        [for i = 0 to text.Length - 1 do
-            let character = text.[i]
-            let encryptedCharCode = int character + encryptionKey
-            let encryptedChar = char encryptedCharCode
-            yield string encryptedChar]
+        [ for i = 0 to text.Length - 1 do
+              let character = text.[i]
+              let encryptedCharCode = int character + encryptionKey
+              let encryptedChar = char encryptedCharCode
+              yield string encryptedChar ]
         |> String.concat ""
+
     encryptedText
 
-let xorDecrypt (text: string, encryptionKey: int): string =
+let xorDecrypt (text: string, encryptionKey: int) : string =
     // TODO: Verify why this is working
-    xorEncrypt(text, -encryptionKey)
-
+    xorEncrypt (text, -encryptionKey)
 

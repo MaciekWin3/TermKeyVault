@@ -34,6 +34,42 @@ module Config =
             | key -> key
         encryptionKey
 
+module TableDataConversions = 
+    open Config
+
+    let convertListToDataTableOfRecords(list: List<Record>) =
+        let table = new DataTable()
+        table.Columns.Add("Title") |> ignore
+        table.Columns.Add("Username") |> ignore
+        table.Columns.Add("Password") |> ignore
+        table.Columns.Add("Category") |> ignore
+        table.Columns.Add("Url") |> ignore
+        table.Columns.Add("Notes") |> ignore
+        list |> List.iter (fun item -> 
+            let decryptedPassword = xorDecrypt (item.Password, getEncryptionKey())
+            let maskedPassword = new string('*', decryptedPassword.Length)
+            let row = table.NewRow()
+            row.[0] <- item.Title
+            row.[1] <- item.Username
+            row.[2] <- maskedPassword 
+            row.[3] <- item.Category
+            row.[4] <- item.Url
+            row.[5] <- item.Notes
+            table.Rows.Add(row) |> ignore
+        )
+        table
+
+    let convertListToDataTableOfCategories(list: List<string>) =
+        let table = new DataTable()
+        table.Columns.Add("Category") |> ignore
+        list |> List.iter (fun item -> 
+            let row = table.NewRow()
+            row.[0] <- item
+            table.Rows.Add(row) |> ignore
+        )
+        table
+
+
 module ClipboardTimer =
     let mutable isTimerRunning = false
     let timerLock = obj()
@@ -114,7 +150,6 @@ module Categories =
 
 module DetailsFrame = 
     open Categories.CategoryTable
-
     let textFieldDetails = 
         let tv = new TextView(
             X = 0,
@@ -324,16 +359,26 @@ module RecordDialog =
 
 module InspectDialog = 
     open RecordDialog
+    open Categories.CategoryTable
 
     let action (e: TableView.CellActivatedEventArgs) = 
-        let row = e.Row
-        let name = e.Table.Rows.[row].[0]
+        let recordRow = e.Row
+        let name = e.Table.Rows.[recordRow].[0]
+        // This is workaround because F# disallaows circular references
+        let refresh() =
+            let categoryRow = categoryTable.SelectedRow;
+            if categoryRow = 0 then
+                categoryTable.SetSelection(0, categoryRow + 1, false)
+            else
+                categoryTable.SetSelection(0, categoryRow - 1, false)
+            categoryTable.SetSelection(0, categoryRow, false)
+            //Application.Refresh()
         match name with
         | :? string as str ->
             let record = Repo.getRecordByTitle(str)
             match record with
             | Some record -> 
-                showCreateRecordDialog(Some record, DialogType.Edit, fun() -> Application.Refresh())
+                showCreateRecordDialog(Some record, DialogType.Edit, fun() -> refresh())
             | None ->
                 ()
         | _ ->
@@ -346,12 +391,12 @@ module InspectDialog =
         dialog.FilePath |> ignore
 
 module RecordTable = 
-    open Categories.CategoryTable
     open Config
     open ClipboardTimer
     open StatusBar
     open InspectDialog
     open DetailsFrame
+    open Categories.CategoryTable
 
     let convertListToDataTableOfRecords(list: List<Record>) =
         let table = new DataTable()
