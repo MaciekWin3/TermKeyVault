@@ -361,18 +361,19 @@ module InspectDialog =
     open RecordDialog
     open Categories.CategoryTable
 
+    // This is workaround because F# disallaows circular references
+    let refresh() =
+        let categoryRow = categoryTable.SelectedRow;
+        if categoryRow = 0 then
+            categoryTable.SetSelection(0, categoryRow + 1, false)
+        else
+            categoryTable.SetSelection(0, categoryRow - 1, false)
+        categoryTable.SetSelection(0, categoryRow, false)
+
     let action (e: TableView.CellActivatedEventArgs) = 
+
         let recordRow = e.Row
         let name = e.Table.Rows.[recordRow].[0]
-        // This is workaround because F# disallaows circular references
-        let refresh() =
-            let categoryRow = categoryTable.SelectedRow;
-            if categoryRow = 0 then
-                categoryTable.SetSelection(0, categoryRow + 1, false)
-            else
-                categoryTable.SetSelection(0, categoryRow - 1, false)
-            categoryTable.SetSelection(0, categoryRow, false)
-            //Application.Refresh()
         match name with
         | :? string as str ->
             let record = Repo.getRecordByTitle(str)
