@@ -1,8 +1,10 @@
-﻿## TODOs for 0.0.1 📃
-- [ ] Fix sync when creating new record
-- [ ] Revisit config section 
-- [ ] Revisit timer 
+﻿## TODOs for 0.1.0 📃
+- [x] Fix sync when creating new record
+- [x] Fix sync when deleting record
 - [ ] Categories dialogs
-- [ ] Fix mouse selection 
-- [ ] Add vim like bindings???
+- [ ] Revisit config section (dialog?)
+- [ ] Revisit timer 
+- [x] Fix mouse selection 
+- [ ] Add vim like bindings
 - [ ] Code cleanup
+- [ ] Clipboard investigation

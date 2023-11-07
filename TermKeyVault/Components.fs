@@ -15,6 +15,8 @@ type DialogType =
     | Edit
 
 module Config =
+    open Utils.Configuration
+
     let showConfig () =
         let config = getConfig ()
 
@@ -348,7 +350,6 @@ module InspectDialog =
         categoryTable.SetSelection(0, categoryRow, false)
 
     let action (e: TableView.CellActivatedEventArgs) =
-
         let recordRow = e.Row
         let name = e.Table.Rows.[recordRow].[0]
 
@@ -422,7 +423,11 @@ module RecordTable =
         let refreshTables () =
             let category = string categoryTable.Table.Rows.[categoryTable.SelectedRow].[0]
             categoryTable.Table <- convertListToDataTableOfCategories (Repo.getCategories ())
-            table.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
+
+            if category <> "All" then
+                table.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
+            else
+                table.Table <- convertListToDataTableOfRecords (Repo.getRecords ())
 
         let showContextMenu (screenPoint: Point, record: Record, deleteMethod) =
             let contextMenu =
@@ -452,9 +457,13 @@ module RecordTable =
             contextMenu.Show()
 
         let deleteItem (title: string) =
-            // TODO: Delete item popup
-            Repo.deleteRecord (title)
-            refreshTables ()
+            let decision =
+                MessageBox.Query("Delete", "Are you sure you want to delete this item?", "Yes", "No")
+
+            if decision = 0 then
+                Repo.deleteRecord (title)
+                refreshTables ()
+
 
         let records = Repo.getRecords ()
         table.Style.AlwaysShowHeaders <- true
@@ -463,26 +472,28 @@ module RecordTable =
 
         table.add_MouseClick (fun e ->
             if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
-                table.SetSelection(1, e.MouseEvent.Y - 3, false)
+                let cell = table.ScreenToCell(e.MouseEvent.X, e.MouseEvent.Y)
 
-                try
-                    let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                    let record = Repo.getRecordByTitle (title)
+                if cell.HasValue then
+                    try
+                        table.SetSelection(1, cell.Value.Y, false)
+                        let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
+                        let record = Repo.getRecordByTitle (title)
 
-                    match record with
-                    | Some record ->
-                        showContextMenu (
-                            Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2),
-                            record,
-                            deleteItem
-                        )
+                        match record with
+                        | Some record ->
+                            showContextMenu (
+                                Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2),
+                                record,
+                                deleteItem
+                            )
 
-                        e.Handled <- true
-                    | None ->
-                        MessageBox.ErrorQuery("Error", "Record not found", "Ok") |> ignore
-                        e.Handled <- true
-                with _ ->
-                    ())
+                            e.Handled <- true
+                        | None ->
+                            MessageBox.ErrorQuery("Error", "Record not found", "Ok") |> ignore
+                            e.Handled <- true
+                    with _ ->
+                        ())
 
         table.add_SelectedCellChanged (fun e ->
             let row = e.NewRow
@@ -578,16 +589,22 @@ module Navbar =
     open Categories.CategoryTable
     open RecordTable
 
+    let rerun () = ()
+
     let menu =
         new MenuBar(
             [| MenuBarItem(
-                   "File",
-                   [| MenuItem("Open", "", (fun () -> openFileDialog ()))
-                      MenuItem("Create", "", (fun () -> Application.RequestStop())) |]
+                   "App",
+                   [| MenuItem("Update", "Updates configuration", (fun () -> ()))
+                      MenuItem("Quit", "Quit application", (fun () -> Application.RequestStop())) |]
                )
                MenuBarItem(
                    "Tools",
-                   [| MenuItem("Password generator", "", (fun () -> openPasswordGeneratorDialog ()))
+                   [| MenuItem(
+                          "Password generator",
+                          "Generate new password",
+                          (fun () -> openPasswordGeneratorDialog ())
+                      )
                       MenuItem("Paste", "", Unchecked.defaultof<_>) |]
                )
                MenuBarItem(
@@ -610,13 +627,13 @@ module Navbar =
                    [| MenuItem(
                           "About",
                           "",
-                          (fun () -> openUrl ("https://github.com/MaciekWin3/TermKeyVault") |> ignore)
+                          (fun () -> Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault") |> ignore)
                       )
                       MenuItem("Config", "", (fun () -> showConfig () |> ignore))
                       MenuItem(
                           "Website",
                           "",
-                          (fun () -> openUrl ("https://github.com/MaciekWin3/TermKeyVault#readme") |> ignore)
+                          (fun () -> Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault#readme") |> ignore)
                       ) |]
                ) |]
         )
