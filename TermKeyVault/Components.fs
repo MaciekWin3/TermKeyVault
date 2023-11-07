@@ -147,6 +147,7 @@ module Categories =
 
         let categoryTable =
             let Win = new Window("Example window for colors")
+
             let table =
                 new TableView(
                     X = 0,
@@ -419,8 +420,9 @@ module RecordTable =
             )
 
         let refreshTables () =
+            let category = string categoryTable.Table.Rows.[categoryTable.SelectedRow].[0]
             categoryTable.Table <- convertListToDataTableOfCategories (Repo.getCategories ())
-            table.Table <- convertListToDataTableOfRecords (Repo.getRecords ())
+            table.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
 
         let showContextMenu (screenPoint: Point, record: Record, deleteMethod) =
             let contextMenu =
@@ -503,8 +505,9 @@ module RecordTable =
         table
 
     let refreshTables () =
+        let category = string categoryTable.Table.Rows.[categoryTable.SelectedRow].[0]
         categoryTable.Table <- convertListToDataTableOfCategories (Repo.getCategories ())
-        recordTable.Table <- convertListToDataTableOfRecords (Repo.getRecords ())
+        recordTable.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
 
 module PasswordGenerator =
     let openPasswordGeneratorDialog () =
