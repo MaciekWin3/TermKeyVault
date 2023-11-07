@@ -2,29 +2,27 @@
 
 open System
 
-type Record = {
-    Id: int
-    Title: string
-    Username: string
-    Password: string
-    Url: string
-    Notes: string 
-    Category: string
-    CreationDate: DateTime 
-    LastModifiedDate: DateTime
-} 
+type Record =
+    { Id: int
+      Title: string
+      Username: string
+      Password: string
+      Url: string
+      Notes: string
+      Category: string
+      CreationDate: DateTime
+      LastModifiedDate: DateTime }
 
-type PasswordParams = {
-    Length: int
-    Numbers: bool
-    Uppercase: bool
-    Lowercase: bool
-    Special: bool
-    ExcludeSimilar: bool
-}
+type PasswordParams =
+    { Length: int
+      Numbers: bool
+      Uppercase: bool
+      Lowercase: bool
+      Special: bool
+      ExcludeSimilar: bool }
 
-type Config = {
-    ShouldCreateDatabase: bool
-    DatabasePath: string
-    EncryptionKey: int
-}
+type Config =
+    { ShouldCreateDatabase: bool
+      DatabasePath: string
+      EncryptionKey: int }
+

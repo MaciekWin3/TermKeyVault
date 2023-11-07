@@ -3,4 +3,6 @@
 - [ ] Revisit config section 
 - [ ] Revisit timer 
 - [ ] Categories dialogs
+- [ ] Fix mouse selection 
+- [ ] Add vim like bindings???
 - [ ] Code cleanup

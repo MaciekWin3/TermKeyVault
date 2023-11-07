@@ -5,32 +5,37 @@ open Microsoft.Data.Sqlite
 open System
 open System.IO
 
-let dbPath =     
-    let appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+let dbPath =
+    let appDataPath =
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+
     let configDir = Path.Combine(appDataPath, "termkeyvault")
     let dbPath = Path.Combine(configDir, "termkeyvault.db")
     dbPath
 
-let checkIfDbExists() =
-    File.Exists(dbPath)
+let checkIfDbExists () = File.Exists(dbPath)
 
-let connectionString(file: string, password: string)= sprintf "Data Source=file:%s;Password=%s;" file password
+let connectionString (file: string, password: string) =
+    sprintf "Data Source=file:%s;Password=%s;" file password
 
-let checkPassword(password: string) =
-    let connection = new SqliteConnection(connectionString(dbPath, password))
+let checkPassword (password: string) =
+    let connection = new SqliteConnection(connectionString (dbPath, password))
+
     try
         connection.Open()
         connection.Close()
         true
-    with
-    | _ -> false
+    with _ ->
+        false
 
-let prepareDb(password: string) =
-    let connection = new SqliteConnection(connectionString(dbPath, password))
+let prepareDb (password: string) =
+    let connection = new SqliteConnection(connectionString (dbPath, password))
     connection.Open()
     let command = connection.CreateCommand()
+
     try
-        command.CommandText <- "Create Table Records (
+        command.CommandText <-
+            "Create Table Records (
             Id INTEGER  primary key autoincrement,
             Title varchar(255) UNIQUE, 
             Username varchar(255),
@@ -40,16 +45,21 @@ let prepareDb(password: string) =
             Category varchar(255),
             CreationDate datetime,
             LastModifiedDate datetime)"
+
         command.ExecuteNonQuery() |> ignore
-    with
-    | _ -> ()
+    with _ ->
+        ()
+
     connection.Close()
 
-let createRecord(record: Record) =
-    use connection = new SqliteConnection(connectionString(dbPath, "test"))
+let createRecord (record: Record) =
+    use connection = new SqliteConnection(connectionString (dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
-    command.CommandText <- sprintf "INSERT INTO Records (
+
+    command.CommandText <-
+        sprintf
+            "INSERT INTO Records (
         Title,
         Username,
         Password,
@@ -58,17 +68,28 @@ let createRecord(record: Record) =
         Category,
         CreationDate,
         LastModifiedDate)
-        VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" record.Title record.Username record.Password record.Url record.Notes record.Category (record.CreationDate.ToString()) (record.LastModifiedDate.ToString())
+        VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')"
+            record.Title
+            record.Username
+            record.Password
+            record.Url
+            record.Notes
+            record.Category
+            (record.CreationDate.ToString())
+            (record.LastModifiedDate.ToString())
+
     command.ExecuteNonQuery() |> ignore
     connection.Close()
 
-let updateRecord(title: string, updatedRecord: Record) =
-    use connection = new SqliteConnection(connectionString(dbPath, "test"))
+let updateRecord (title: string, updatedRecord: Record) =
+    use connection = new SqliteConnection(connectionString (dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
-    
+
     // Construct the SQL update statement
-    command.CommandText <- sprintf "UPDATE Records
+    command.CommandText <-
+        sprintf
+            "UPDATE Records
          SET Title = '%s',
              Username = '%s',
              Password = '%s',
@@ -77,29 +98,30 @@ let updateRecord(title: string, updatedRecord: Record) =
              Category = '%s',
              CreationDate = '%s',
              LastModifiedDate = '%s'
-         WHERE Title= '%s'" 
-         updatedRecord.Title 
-         updatedRecord.Username 
-         updatedRecord.Password 
-         updatedRecord.Url 
-         updatedRecord.Notes 
-         updatedRecord.Category 
-         (updatedRecord.CreationDate.ToString()) 
-         (DateTime.Now.ToString()) 
-         title
+         WHERE Title= '%s'"
+            updatedRecord.Title
+            updatedRecord.Username
+            updatedRecord.Password
+            updatedRecord.Url
+            updatedRecord.Notes
+            updatedRecord.Category
+            (updatedRecord.CreationDate.ToString())
+            (DateTime.Now.ToString())
+            title
 
     Console.WriteLine(command.CommandText)
 
     command.ExecuteNonQuery() |> ignore
     connection.Close()
 
-let getRecords() =
-    let connection = new SqliteConnection(connectionString(dbPath, "test"))
+let getRecords () =
+    let connection = new SqliteConnection(connectionString (dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- "SELECT * FROM Records"
     let result = command.ExecuteReader()
     let mutable records = []
+
     while result.Read() do
         let id = result.GetInt32(0)
         let title = result.GetString(1)
@@ -110,19 +132,31 @@ let getRecords() =
         let category = result.GetString(6)
         let creationDate = result.GetString(7)
         let lastModifiedDate = result.GetString(8)
-        let record = {Id = id; Title = title; Username = username; Password = password; Url = url; Notes = notes; Category = category; CreationDate = DateTime.Parse(creationDate); LastModifiedDate = DateTime.Parse(lastModifiedDate)}
+
+        let record =
+            { Id = id
+              Title = title
+              Username = username
+              Password = password
+              Url = url
+              Notes = notes
+              Category = category
+              CreationDate = DateTime.Parse(creationDate)
+              LastModifiedDate = DateTime.Parse(lastModifiedDate) }
+
         records <- record :: records
 
     connection.Close()
     records
 
-let getRecordsByCategory(category: string)  =
-    let connection = new SqliteConnection(connectionString(dbPath, "test"))
+let getRecordsByCategory (category: string) =
+    let connection = new SqliteConnection(connectionString (dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "SELECT * FROM Records WHERE Category = '%s'" category
     let result = command.ExecuteReader()
     let mutable records = []
+
     while result.Read() do
         let id = result.GetInt32(0)
         let title = result.GetString(1)
@@ -133,19 +167,30 @@ let getRecordsByCategory(category: string)  =
         let category = result.GetString(6)
         let creationDate = result.GetString(7)
         let lastModifiedDate = result.GetString(8)
-        let record = {Id = id; Title = title; Username = username; Password = password; Url = url; Notes = notes; Category = category; CreationDate = DateTime.Parse(creationDate); LastModifiedDate = DateTime.Parse(lastModifiedDate)}
+
+        let record =
+            { Id = id
+              Title = title
+              Username = username
+              Password = password
+              Url = url
+              Notes = notes
+              Category = category
+              CreationDate = DateTime.Parse(creationDate)
+              LastModifiedDate = DateTime.Parse(lastModifiedDate) }
+
         records <- record :: records
 
     connection.Close()
     records
 
-let getRecordByTitle(title: string): Record option =
-    let connection = new SqliteConnection(connectionString(dbPath, "test"))
+let getRecordByTitle (title: string) : Record option =
+    let connection = new SqliteConnection(connectionString (dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "SELECT * FROM Records WHERE Title = '%s'" title
     let reader = command.ExecuteReader()
-    
+
     let record =
         if reader.Read() then
             let id = reader.GetInt32(0)
@@ -157,57 +202,84 @@ let getRecordByTitle(title: string): Record option =
             let category = reader.GetString(6)
             let creationDate = reader.GetString(7)
             let lastModifiedDate = reader.GetString(8)
-            
-            Some {
-                Id = id
-                Title = title
-                Username = username
-                Password = password
-                Url = url
-                Notes = notes
-                Category = category
-                CreationDate = DateTime.Parse(creationDate)
-                LastModifiedDate = DateTime.Parse(lastModifiedDate)
-            }
+
+            Some
+                { Id = id
+                  Title = title
+                  Username = username
+                  Password = password
+                  Url = url
+                  Notes = notes
+                  Category = category
+                  CreationDate = DateTime.Parse(creationDate)
+                  LastModifiedDate = DateTime.Parse(lastModifiedDate) }
         else
             None
 
     connection.Close()
     record
 
-let getCategories() = 
-    let connection = new SqliteConnection(connectionString(dbPath, "test"))
-    connection.Open() 
+let getCategories () =
+    let connection = new SqliteConnection(connectionString (dbPath, "test"))
+    connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- "SELECT DISTINCT Category FROM Records"
     let result = command.ExecuteReader()
 
     let mutable categories = []
+
     while result.Read() do
         let category = result.GetString(0)
         categories <- category :: categories
 
     connection.Close()
-    ["All"] @ categories
+    [ "All" ] @ categories
 
-let deleteRecord(title: string) = 
-    let connection = new SqliteConnection(connectionString(dbPath, "test"))
+let deleteRecord (title: string) =
+    let connection = new SqliteConnection(connectionString (dbPath, "test"))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "DELETE FROM Records WHERE Title = '%s'" title
     command.ExecuteNonQuery() |> ignore
-    connection.Close();
+    connection.Close()
 
-let returnTestData() = 
-    let x = {Id = 1; Title = "GitHub"; Username = "user"; Password = "P@ssword"; Url = "https://github.com"; Notes = "Notes"; Category = "Social Media"; CreationDate = DateTime.Now; LastModifiedDate = DateTime.Now}
-    let y = {Id = 2; Title = "Facebook"; Username = "user"; Password = "P@ssword"; Url = "https://facebook.com"; Notes = "Notes"; Category = "Social Media";  CreationDate = DateTime.Now; LastModifiedDate = DateTime.Now}
-    let z = {Id = 3; Title = "Twitter"; Username = "user"; Password = "P@ssword"; Url = "https://twitter.com"; Notes = "Notes"; Category = "Social Media";  CreationDate = DateTime.Now; LastModifiedDate = DateTime.Now}
-    [x; y; z]
+let returnTestData () =
+    let x =
+        { Id = 1
+          Title = "GitHub"
+          Username = "user"
+          Password = "P@ssword"
+          Url = "https://github.com"
+          Notes = "Notes"
+          Category = "Social Media"
+          CreationDate = DateTime.Now
+          LastModifiedDate = DateTime.Now }
 
-let insertTestData() = 
-    let testData = returnTestData()
-    testData |> List.iter (fun item -> createRecord(item))
+    let y =
+        { Id = 2
+          Title = "Facebook"
+          Username = "user"
+          Password = "P@ssword"
+          Url = "https://facebook.com"
+          Notes = "Notes"
+          Category = "Social Media"
+          CreationDate = DateTime.Now
+          LastModifiedDate = DateTime.Now }
 
+    let z =
+        { Id = 3
+          Title = "Twitter"
+          Username = "user"
+          Password = "P@ssword"
+          Url = "https://twitter.com"
+          Notes = "Notes"
+          Category = "Social Media"
+          CreationDate = DateTime.Now
+          LastModifiedDate = DateTime.Now }
 
+    [ x; y; z ]
 
+let insertTestData () =
+    let testData = returnTestData ()
+    testData |> List.iter (fun item -> createRecord (item))
 
