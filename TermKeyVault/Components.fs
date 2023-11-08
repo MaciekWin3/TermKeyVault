@@ -16,13 +16,20 @@ type DialogType =
 
 module Config =
     open Utils.Configuration
+    open System.IO
 
     let showConfig () =
         let config = getConfig ()
 
+        let appDataPath =
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+
+        let configDir = Path.Combine(appDataPath, "termkeyvault")
+
         MessageBox.Query(
             "Config",
             $"""
+Config localization: {configDir}
 Db path: {config.DatabasePath}
 Create: {config.ShouldCreateDatabase}
 Config: {config.EncryptionKey}
@@ -375,6 +382,7 @@ module RecordTable =
     open InspectDialog
     open DetailsFrame
     open Categories.CategoryTable
+    open RecordDialog
 
     let convertListToDataTableOfRecords (list: List<Record>) =
         let table = new DataTable()
@@ -429,6 +437,14 @@ module RecordTable =
             else
                 table.Table <- convertListToDataTableOfRecords (Repo.getRecords ())
 
+        let copyPasswordToClipboard (record: Record) =
+            let preparedPassword = xorDecrypt (record.Password |> string, getEncryptionKey ())
+            let isCopingSuccessfull = Clipboard.TrySetClipboardData(preparedPassword)
+
+            match isCopingSuccessfull with
+            | true -> setClipboardTimer (statusBar) |> ignore
+            | false -> MessageBox.ErrorQuery("Clipboard", "Failed to copy to clipboard") |> ignore
+
         let showContextMenu (screenPoint: Point, record: Record, deleteMethod) =
             let contextMenu =
                 new ContextMenu(
@@ -436,21 +452,14 @@ module RecordTable =
                     screenPoint.Y,
                     MenuBarItem(
                         "File",
-                        [| MenuItem(
-                               "Copy",
-                               "",
+                        [| MenuItem("Copy", "Copy password to clipboard", (fun () -> copyPasswordToClipboard (record)))
+                           MenuItem(
+                               "Edit",
+                               "Edit record",
                                (fun () ->
-                                   let preparedPassword = xorDecrypt (record.Password |> string, getEncryptionKey ())
-                                   let isCopingSuccessfull = Clipboard.TrySetClipboardData(preparedPassword)
-
-                                   match isCopingSuccessfull with
-                                   | true -> setClipboardTimer (statusBar) |> ignore
-                                   | false ->
-                                       MessageBox.ErrorQuery("Clipboard", "Failed to copy to clipboard") |> ignore)
+                                   showCreateRecordDialog (Some record, DialogType.Edit, (fun () -> refreshTables ())))
                            )
-                           MenuItem("Inspect", "", (fun () -> openFileDialog ()))
-                           MenuItem("Edit", "", (fun () -> showConfig ()))
-                           MenuItem("Delete", "", (fun () -> deleteMethod (record.Title))) |]
+                           MenuItem("Delete", "Delete record", (fun () -> deleteMethod (record.Title))) |]
                     )
                 )
 
@@ -594,7 +603,7 @@ module Navbar =
         new MenuBar(
             [| MenuBarItem(
                    "App",
-                   [| MenuItem("Update", "Updates configuration", (fun () -> Configuration.openConfigFile () |> ignore))
+                   [| MenuItem("Config", "Show config file", (fun () -> Configuration.openConfigFile () |> ignore))
                       MenuItem("Quit", "Quit application", (fun () -> Application.RequestStop())) |]
                )
                MenuBarItem(
@@ -603,35 +612,26 @@ module Navbar =
                           "Password generator",
                           "Generate new password",
                           (fun () -> openPasswordGeneratorDialog ())
-                      )
-                      MenuItem("Paste", "", Unchecked.defaultof<_>) |]
-               )
-               MenuBarItem(
-                   "Category",
-                   [| MenuItem("Add category", "", (fun () -> raise (new NotImplementedException())))
-                      MenuItem("Edit category", "", (fun () -> raise (new NotImplementedException())))
-                      MenuItem("Delete category", "", (fun () -> raise (new NotImplementedException()))) |]
+                      ) |]
                )
                MenuBarItem(
                    "Records",
                    [| MenuItem(
-                          "Add record",
-                          "",
+                          "Add",
+                          "Adds new record",
                           (fun () -> showCreateRecordDialog (None, DialogType.Add, refreshTables))
-                      )
-                      MenuItem("Paste", "", Unchecked.defaultof<_>) |]
+                      ) |]
                )
                MenuBarItem(
                    "Help",
                    [| MenuItem(
                           "About",
-                          "",
+                          "Info about app",
                           (fun () -> Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault") |> ignore)
                       )
-                      MenuItem("Config", "", (fun () -> showConfig () |> ignore))
                       MenuItem(
                           "Website",
-                          "",
+                          "Project repo",
                           (fun () -> Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault#readme") |> ignore)
                       ) |]
                ) |]
