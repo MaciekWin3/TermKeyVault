@@ -1,7 +1,6 @@
 ﻿module Components
 
 open Terminal.Gui
-open System.Timers
 open System.Data
 open System
 
@@ -88,44 +87,58 @@ module TableDataConversions =
         table
 
 module ClipboardTimer =
+    open System.Threading
+    open System.Timers
+
     let mutable isTimerRunning = false
     let timerLock = obj ()
+    let cancellationTokenSource = ref (null : CancellationTokenSource)
+
+    let message (time: string) = $"Clipboard will be cleared in {time}"
+
+    let resetTimer (timer: Timer) =
+        timer.Stop()
+        timer.Dispose()
+
+    let runTimer (timer: Timer, statusBar: StatusBar, elapsedTime: byref<float>, cancellationToken: CancellationToken) =
+        Application.Refresh()
+        elapsedTime <- elapsedTime + 0.8
+
+        let timeString =
+            (TimeSpan.FromSeconds(8.0) - TimeSpan.FromSeconds(elapsedTime))
+                .ToString(@"hh\:mm\:ss")
+
+        statusBar.Items.[2].Title <- message timeString
+
+        if elapsedTime >= 8.0 then
+            resetTimer (timer)
+            Clipboard.TrySetClipboardData("") |> ignore
+            elapsedTime <- 0.0
+            statusBar.Items.[2].Title <- ""
+            Application.Refresh()
+            isTimerRunning <- false
+
 
     let setClipboardTimer (statusBar: StatusBar) =
         Application.MainLoop.Invoke(fun () ->
+            let newCancellationTokenSource = new CancellationTokenSource()
+            let timer = new Timer(800.0)
+            timer.AutoReset <- true
+            statusBar.Items.[2].Title <- message "00:00:08"
+            let mutable timeLeftInClipboard: float = 0.0
+
+            if isTimerRunning then
+                (cancellationTokenSource.Value).Cancel()
+
             lock timerLock (fun () ->
-                if isTimerRunning then
-                    MessageBox.ErrorQuery("Timer", "Timer is already running", "Ok") |> ignore
-                    ()
-                else
-                    let message (time: string) = $"Clipboard will be cleared in {time}"
-                    statusBar.Items.[2].Title <- message "00:00:08"
-                    let mutable elapsedTime = 0.0
-                    let timer = new Timer(800.0)
-                    timer.AutoReset <- true
+                cancellationTokenSource.contents <- newCancellationTokenSource
+                isTimerRunning <- true
 
-                    timer.Elapsed.Add(fun _ ->
-                        Application.Refresh()
-                        elapsedTime <- elapsedTime + 0.8
-
-                        let timeString =
-                            (TimeSpan.FromSeconds(8.0) - TimeSpan.FromSeconds(elapsedTime))
-                                .ToString(@"hh\:mm\:ss")
-
-                        statusBar.Items.[2].Title <- message timeString
-
-                        if elapsedTime >= 8.0 then
-                            timer.Stop()
-                            timer.Dispose()
-                            Clipboard.TrySetClipboardData("") |> ignore
-                            elapsedTime <- 0.0
-                            statusBar.Items.[2].Title <- ""
-                            Application.Refresh()
-                            isTimerRunning <- false // Reset the flag when the timer completes
-                    )
-
-                    timer.Start()
-                    isTimerRunning <- true))
+                timer.Elapsed.Add(fun _ ->
+                    if not newCancellationTokenSource.Token.IsCancellationRequested then
+                        runTimer(timer, statusBar, &timeLeftInClipboard, newCancellationTokenSource.Token)        
+                )
+                timer.Start()))
 
 module StatusBar =
     let statusBar =
@@ -212,7 +225,7 @@ module RecordDialog =
                   Title = ""
                   Username = ""
                   Password = ""
-                  Url = ""
+                  Url = "https://"
                   Notes = ""
                   Category = ""
                   CreationDate = DateTime.Now

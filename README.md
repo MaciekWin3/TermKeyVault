@@ -31,5 +31,9 @@ git clone https://github.com/MaciekWin3/TermKeyVault
 And you are ready to go! Just bare in mind that if you are using TermKeyVault as a password manager, your development setup will conflict with your production setup.
 Also I recommend using [DB Browser for SQLite](https://sqlitebrowser.org/) to access encrytpted SQLite database.
 
+## Notes 📒 
+
+This project was written with the purpose of exploring the F# language and how it interacts with the Terminal.Gui library. My experience has shown that initially, this combination is well-suited for building a simple prototype. However, when it comes to developing more complex applications where two components are interdependent, I'd prefer to use C#. Since this was my first major project in F#, the code quality could have been better, so I encourage contributions.
+
 # Contributing 🤝
 If you want to contribute to this project, feel free to do so. I am open to any suggestions and improvements.
