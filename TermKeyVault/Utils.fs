@@ -83,3 +83,30 @@ module Configuration =
         let config = parseXml xml
         config
 
+    let openConfigFile () =
+        let appDataPath =
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+
+        let configDir = Path.Combine(appDataPath, "termkeyvault")
+        let configPath = Path.Combine(configDir, "config.xml")
+
+        let psi = new ProcessStartInfo()
+        psi.FileName <- configPath
+
+        let isWindows = System.Environment.OSVersion.Platform = PlatformID.Win32NT
+
+        if isWindows then
+            psi.UseShellExecute <- true
+            psi.Verb <- "edit"
+        elif
+            System.Environment.OSVersion.Platform = PlatformID.Unix
+            || System.Environment.OSVersion.Platform = PlatformID.MacOSX
+        then
+            psi.UseShellExecute <- false
+            psi.FileName <- "xdg-open"
+
+        let proc = new Process()
+        proc.StartInfo <- psi
+
+        proc.Start()
+

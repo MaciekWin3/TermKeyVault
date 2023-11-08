@@ -2,7 +2,7 @@
 - [x] Fix sync when creating new record
 - [x] Fix sync when deleting record
 - [ ] Categories dialogs
-- [ ] Revisit config section (dialog?)
+- [x] Revisit config section
 - [ ] Revisit timer 
 - [x] Fix mouse selection 
 - [ ] Add vim like bindings

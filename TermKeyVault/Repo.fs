@@ -83,7 +83,6 @@ let updateRecord (title: string, updatedRecord: Record) =
     connection.Open()
     let command = connection.CreateCommand()
 
-    // Construct the SQL update statement
     command.CommandText <-
         sprintf
             "UPDATE Records
@@ -105,8 +104,6 @@ let updateRecord (title: string, updatedRecord: Record) =
             (updatedRecord.CreationDate.ToString())
             (DateTime.Now.ToString())
             title
-
-    Console.WriteLine(command.CommandText)
 
     command.ExecuteNonQuery() |> ignore
     connection.Close()

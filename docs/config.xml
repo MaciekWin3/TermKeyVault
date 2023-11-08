@@ -1,5 +1,5 @@
 <config>
-	<db_path>xfasfddasdf</db_path>
 	<create_db>true</create_db>
+	<db_path>xfasfddasdf</db_path>
 	<encryption_key>12</encryption_key>
 </config>

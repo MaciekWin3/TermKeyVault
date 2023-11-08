@@ -23,9 +23,9 @@ module Config =
         MessageBox.Query(
             "Config",
             $"""
-    Db path: {config.DatabasePath}
-    Create: {config.ShouldCreateDatabase}
-    Config: {config.EncryptionKey}
+Db path: {config.DatabasePath}
+Create: {config.ShouldCreateDatabase}
+Config: {config.EncryptionKey}
             """
         )
         |> ignore
@@ -588,14 +588,13 @@ module Navbar =
     open Config
     open Categories.CategoryTable
     open RecordTable
-
-    let rerun () = ()
+    open Utils
 
     let menu =
         new MenuBar(
             [| MenuBarItem(
                    "App",
-                   [| MenuItem("Update", "Updates configuration", (fun () -> ()))
+                   [| MenuItem("Update", "Updates configuration", (fun () -> Configuration.openConfigFile () |> ignore))
                       MenuItem("Quit", "Quit application", (fun () -> Application.RequestStop())) |]
                )
                MenuBarItem(

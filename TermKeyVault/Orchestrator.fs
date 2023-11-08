@@ -36,7 +36,6 @@ module ScreenOrchestrator =
         if showMenu then
             Application.Top.Add(menu)
 
-
 module LoginWindow =
     open ScreenOrchestrator
     open MainWindow
@@ -52,10 +51,14 @@ module LoginWindow =
             field.add_KeyPress (fun e ->
                 if (e.KeyEvent.Key = Key.Enter) then
                     e.Handled <- true
+                    let password = field.Text |> string
 
-                    let checkIfPasswordIsValid = field.Text |> string |> checkPassword
+                    let checkIfPasswordIsValid (password: string) : bool =
+                        match password with
+                        | "" -> false
+                        | p -> p |> checkPassword
 
-                    if (checkIfPasswordIsValid) then
+                    if (checkIfPasswordIsValid (password)) then
                         switchWindow mainWindow true true true
                     else
                         field.Text <- ""
