@@ -628,7 +628,7 @@ module Navbar =
 
     let showAsciiArt () =
         let sb = new StringBuilder()
-        sb.AppendLine ("Simplate TUI password manager") |> ignore
+        sb.AppendLine ("Simple TUI password manager") |> ignore
         sb.AppendLine ("") |> ignore
         sb.AppendLine("  _______ _  ___      __ ") |> ignore
         sb.AppendLine(" |__   __| |/ \ \    / / ") |> ignore

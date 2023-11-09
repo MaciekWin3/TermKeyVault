@@ -46,7 +46,6 @@ let prepareDb (password: string) =
         command.ExecuteNonQuery() |> ignore
     with _ ->
         ()
-
     connection.Close()
 
 let createRecord (record: Record) =

@@ -12,10 +12,11 @@ let initApp _ =
     let isDbCreated = checkIfDbExists ()
 
     match isDbCreated with
-    | true -> ()
-    | false -> showCreateDbWizard ()
+    | true -> 
+        Application.Top.Add(loginWindow)
+    | false -> 
+        showCreateDbWizard ()
 
-    Application.Top.Add(loginWindow)
     Application.Run()
     Application.Shutdown()
     0

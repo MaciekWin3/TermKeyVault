@@ -22,7 +22,7 @@ module ScreenOrchestrator =
     open Navbar
     open StatusBar
 
-    let switchWindow (newWindow: Window) (showMenu: bool) (includeNavbar: bool) (includeStatusBar: bool) =
+    let switchWindow (newWindow: Window, showMenu: bool, includeNavbar: bool, includeStatusBar: bool) =
         Application.Top.RemoveAll()
 
         if includeNavbar then
@@ -59,7 +59,7 @@ module LoginWindow =
                         | p -> p |> checkPassword
 
                     if (checkIfPasswordIsValid (password)) then
-                        switchWindow mainWindow true true true
+                        switchWindow(mainWindow, true, true, true)
                     else
                         field.Text <- ""
                         MessageBox.ErrorQuery("Error", "Wrong password", "Ok") |> ignore)
@@ -122,18 +122,17 @@ module CreateDatabaseWizard =
             )
 
         secondStep.NextButtonText <- "Create database"
+        password.SetFocus();
         secondStep.Add(passwordLabel, password, passwordRepeatLabel, passwordRepeat)
 
         wizard.add_Finished (fun _ ->
             if (password.Text = passwordRepeat.Text) then
                 prepareDb (password.Text |> string)
                 wizard.Enabled <- false
-                switchWindow loginWindow false false false
+                switchWindow(loginWindow, false, false, false)
                 MessageBox.Query("Success!", "Successfuly created database", "Ok") |> ignore
             else
                 MessageBox.ErrorQuery("Error", "Passwords do not match", "Ok") |> ignore)
 
-
         Application.Top.Add(wizard)
-        Application.Run(Application.Top)
 
