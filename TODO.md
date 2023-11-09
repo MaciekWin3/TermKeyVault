@@ -6,8 +6,16 @@
 - [x] Fix mouse selection 
 - [x] Better control with keyboard only
 
+## TODOs for 0.1.1 📃
+- [x] Fix initial app setup (it crashes when there is no config file) - verify
+- [ ] Another sync issue when adding new item 
+- [ ] Tab to navigate between sections
+
 ## Future TODOs 📝
-- [ ] Code cleanup
 - [ ] Clipboard investigation
-- [ ] Configure clipboard time and theme by config 
 - [ ] Add vim like bindings 
+- [ ] Code cleanup
+- [ ] Configure clipboard time and theme by config 
+- [ ] Shortcuts
+- [ ] Copy button in password generator 
+- [ ] Better error handling 
