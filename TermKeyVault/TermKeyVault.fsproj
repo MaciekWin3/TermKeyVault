@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,13 +6,18 @@
 	  <PackageId>TermKeyVault</PackageId>
 	  <Authors>Maciej Winnik</Authors>
 	  <Description>Terminal password manager</Description>
-	  <PackageVersion>0.0.1</PackageVersion>
+	  <PackageVersion>0.1.0</PackageVersion>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
-	  <ProjectURL></ProjectURL>
+	  <ProjectURL>https://github.com/MaciekWin3/TermKeyValut</ProjectURL>
 	  <RepositoryURL>https://github.com/MaciekWin3/TermKeyValut</RepositoryURL>
 	  <PackAsTool>true</PackAsTool>
 	  <ToolCommandName>tkv</ToolCommandName>
 	  <PackageOutputPath>./nupkg</PackageOutputPath>
+	  <PackageTags>Password Ranager Terminal TUI</PackageTags>
+	  <Description>
+        TermKeyVault is a simple terminal password manager written in F#. It uses SQLite database to store encrypted passwords and Terminal.Gui for the UI.
+	  </Description>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,6 +43,10 @@
 
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="7.0.401" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>

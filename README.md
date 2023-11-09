@@ -9,11 +9,28 @@ TermKeyValut is still in development and is not ready for use. Do not have high 
 TermKeyValut is my side project to explore [Functional Programming](https://en.wikipedia.org/wiki/Functional_programming), [F#](https://fsharp.org/) and how it works with [Terminal.Gui](https://github.com/gui-cs/Terminal.Gui). The idea is to create a password manager that is easy to use and can be used in the terminal.
 It is by no means secure (although it uses encrypted SQLite database and uses basic encryption) and if your main goal is to have a secure password manager, I would recommend using [KeePass](https://keepass.info/), from which I drew inspiration while developing this application.
 
-## Demo 🎥
-Soon...
+## Screenshots 📷
+![Login window](./docs/screenshots/login.png)
+![Main menu](./docs/screenshots/main.png)
+![Password generator](./docs/screenshots/generator.png)
 
 ## Installation 📦
-Will be provided when the project is ready for use.
+
+To install whale you need to have the following dependencies installed on your system:
+
+- [.NET](https://dotnet.microsoft.com/download/dotnet/7.0)
+- Modern Terminal - For Windows: [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab)
+
+Once you have the dependencies installed, you can download TermKeyVault using this command:
+```bash
+dotnet tool install --global TermKeyVault
+```
+
+TermKeyVault is constantly being developed, so to update it to the latest version, use the following command:
+
+```bash
+dotnet tool update --global TermKeyVault
+```
 
 ## Usage 🧑‍💻 
 To use TermKeyVault type `tkv` in terminal. You will be prompted to enter your master password. If you are using TermKeyVault for the first time, you will be asked to create a new database. After that you will be presented with the main menu.
