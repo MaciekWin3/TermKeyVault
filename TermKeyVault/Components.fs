@@ -92,7 +92,7 @@ module ClipboardTimer =
 
     let mutable isTimerRunning = false
     let timerLock = obj ()
-    let cancellationTokenSource = ref (null : CancellationTokenSource)
+    let cancellationTokenSource = ref (null: CancellationTokenSource)
 
     let message (time: string) = $"Clipboard will be cleared in {time}"
 
@@ -100,7 +100,7 @@ module ClipboardTimer =
         timer.Stop()
         timer.Dispose()
 
-    let runTimer (timer: Timer, statusBar: StatusBar, elapsedTime: byref<float>, cancellationToken: CancellationToken) =
+    let runTimer (timer: Timer, statusBar: StatusBar, elapsedTime: byref<float>, _) =
         Application.Refresh()
         elapsedTime <- elapsedTime + 0.8
 
@@ -136,8 +136,8 @@ module ClipboardTimer =
 
                 timer.Elapsed.Add(fun _ ->
                     if not newCancellationTokenSource.Token.IsCancellationRequested then
-                        runTimer(timer, statusBar, &timeLeftInClipboard, newCancellationTokenSource.Token)        
-                )
+                        runTimer (timer, statusBar, &timeLeftInClipboard, newCancellationTokenSource.Token))
+
                 timer.Start()))
 
 module StatusBar =
@@ -358,7 +358,7 @@ module InspectDialog =
     open RecordDialog
     open Categories.CategoryTable
 
-    // This is workaround because F# disallaows circular references
+    // Important: This is workaround because F# disallaows circular references
     let refresh () =
         let categoryRow = categoryTable.SelectedRow
 
@@ -381,12 +381,6 @@ module InspectDialog =
             | Some record -> showCreateRecordDialog (Some record, DialogType.Edit, (fun () -> refresh ()))
             | None -> ()
         | _ -> ()
-
-    let openFileDialog () =
-        let dialog = new OpenDialog("Open", "Open a file")
-        dialog.DirectoryPath <- "/home"
-        Application.Run dialog |> ignore
-        dialog.FilePath |> ignore
 
 module RecordTable =
     open Config
@@ -486,36 +480,58 @@ module RecordTable =
                 Repo.deleteRecord (title)
                 refreshTables ()
 
-
         let records = Repo.getRecords ()
         table.Style.AlwaysShowHeaders <- true
         table.Table <- convertListToDataTableOfRecords (records)
-        table.add_CellActivated (action)
+
+        table.add_CellActivated (fun (e) -> 
+            let recordRow = table.SelectedRow
+            let name = table.Table.Rows.[recordRow].[0]
+            let point = Point(table.Frame.X + 5, table.Frame.Y + 5)
+            match name with
+            | :? string as str ->
+                let record = Repo.getRecordByTitle (str)
+
+                match record with
+                | Some record -> showContextMenu (point, record, deleteItem)
+                | None -> MessageBox.ErrorQuery("Error", "Unable to show context menu", "Ok") |> ignore
+            | _ -> MessageBox.ErrorQuery("Error", "Unabale to find given record", "Ok") |> ignore)
 
         table.add_MouseClick (fun e ->
             if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
+                e.Handled <- true
                 let cell = table.ScreenToCell(e.MouseEvent.X, e.MouseEvent.Y)
 
                 if cell.HasValue then
-                    try
-                        table.SetSelection(1, cell.Value.Y, false)
-                        let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                        let record = Repo.getRecordByTitle (title)
+                    table.SetSelection(1, cell.Value.Y, false)
+                    let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
+                    let record = Repo.getRecordByTitle (title)
 
-                        match record with
-                        | Some record ->
-                            showContextMenu (
-                                Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2),
-                                record,
-                                deleteItem
-                            )
+                    match record with
+                    | Some record ->
+                        showContextMenu (
+                            Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2),
+                            record,
+                            deleteItem
+                        )
 
-                            e.Handled <- true
-                        | None ->
-                            MessageBox.ErrorQuery("Error", "Record not found", "Ok") |> ignore
-                            e.Handled <- true
-                    with _ ->
-                        ())
+                    | None -> 
+                        MessageBox.ErrorQuery("Error", "Unable to show context menu", "Ok") |> ignore)
+
+        
+        table.add_MouseClick (fun e ->
+            if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button1DoubleClicked)) then
+                e.Handled <- true
+                let cell = table.ScreenToCell(e.MouseEvent.X, e.MouseEvent.Y)
+
+                if cell.HasValue then
+                    table.SetSelection(1, cell.Value.Y, false)
+                    let point = Point(table.Frame.X + 5, table.Frame.Y + 5)
+                    let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
+                    let record = Repo.getRecordByTitle (title)
+                    match record with
+                    | Some record -> copyPasswordToClipboard (record)
+                    | None -> MessageBox.ErrorQuery("Error", "Unable to copy password to clipboard", "Ok") |> ignore)
 
         table.add_SelectedCellChanged (fun e ->
             let row = e.NewRow
@@ -604,13 +620,28 @@ module PasswordGenerator =
         Application.Run dialog
 
 module Navbar =
-    open InspectDialog
+    open System.Text
     open PasswordGenerator
     open RecordDialog
-    open Config
     open Categories.CategoryTable
     open RecordTable
-    open Utils
+
+    let showAsciiArt () =
+        let sb = new StringBuilder()
+        sb.AppendLine ("Simplate TUI password manager") |> ignore
+        sb.AppendLine ("") |> ignore
+        sb.AppendLine("  _______ _  ___      __ ") |> ignore
+        sb.AppendLine(" |__   __| |/ \ \    / / ") |> ignore
+        sb.AppendLine("    | |  | ' / \ \  / /  ") |> ignore
+        sb.AppendLine("    | |  |  <   \ \/ /   ") |> ignore
+        sb.AppendLine("    | |  | . \   \  /    ") |> ignore
+        sb.AppendLine("    |_|  |_|\_\   \/     ") |> ignore
+        sb.AppendLine("                         ") |> ignore
+        sb.AppendLine("") |> ignore
+        sb.AppendLine("https://github.com/MaciekWin3/TermKeyVault") |> ignore
+        sb.ToString() |> ignore
+        MessageBox.Query("About TermKeyVault", sb.ToString(), "Ok") |> ignore
+
 
     let menu =
         new MenuBar(
@@ -637,15 +668,16 @@ module Navbar =
                )
                MenuBarItem(
                    "Help",
-                   [| MenuItem(
-                          "About",
-                          "Info about app",
-                          (fun () -> Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault") |> ignore)
-                      )
+                   [| MenuItem("About", "Info about app", (fun () -> showAsciiArt ()))
                       MenuItem(
                           "Website",
                           "Project repo",
-                          (fun () -> Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault#readme") |> ignore)
+                          (fun () ->
+                              try
+                                  Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault") |> ignore
+                              with _ ->
+                                  MessageBox.ErrorQuery("Error opening website", "Cannot open url", "Ok")
+                                  |> ignore)
                       ) |]
                ) |]
         )
