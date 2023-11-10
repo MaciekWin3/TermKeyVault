@@ -558,7 +558,10 @@ module RecordTable =
     let refreshTables () =
         let category = string categoryTable.Table.Rows.[categoryTable.SelectedRow].[0]
         categoryTable.Table <- convertListToDataTableOfCategories (Repo.getCategories ())
-        recordTable.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
+        if category <> "All" then
+            recordTable.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
+        else
+            recordTable.Table <- convertListToDataTableOfRecords (Repo.getRecords ())
 
 module PasswordGenerator =
     let openPasswordGeneratorDialog () =
