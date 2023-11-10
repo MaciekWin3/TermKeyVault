@@ -9,9 +9,9 @@
 ## TODOs for 0.1.1 📃
 - [x] Fix initial app setup (it crashes when there is no config file) - verify
 - [x] Another sync issue when adding new item 
-- [ ] Tab to navigate between sections
 
 ## Future TODOs 📝
+- [ ] Tab to navigate between sections
 - [ ] Clipboard investigation
 - [ ] Add vim like bindings 
 - [ ] Code cleanup
