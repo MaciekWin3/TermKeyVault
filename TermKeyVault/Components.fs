@@ -306,7 +306,9 @@ module RecordDialog =
             categoryComboBox
         )
 
-        let validate (password: string, confirmation: string) = password = confirmation
+        // TODO: make better validation
+        let validate (password: string, confirmation: string) =
+            password = confirmation
 
         (* Exit button *)
         let exitButton = new Button("Exit", true)

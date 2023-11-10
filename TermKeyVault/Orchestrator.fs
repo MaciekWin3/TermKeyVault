@@ -40,7 +40,7 @@ module LoginWindow =
     open ScreenOrchestrator
     open MainWindow
 
-    let loginWindow =
+    let loginWindow() =
         let loginLabel =
             new Label(Text = "Enter Master Password: ", X = Pos.Center(), Y = Pos.Center())
 
@@ -53,17 +53,28 @@ module LoginWindow =
                     e.Handled <- true
                     let password = field.Text |> string
 
-                    let checkIfPasswordIsValid (password: string) : bool =
+                    let isValidDb =
+                        match password with
+                        | "" -> false
+                        | p -> p |> checkIfDbIsValid
+
+                    let isValidPassword = 
                         match password with
                         | "" -> false
                         | p -> p |> checkPassword
 
-                    if (checkIfPasswordIsValid (password)) then
+                    match isValidDb, isValidPassword with
+                    | true, true ->
                         switchWindow(mainWindow, true, true, true)
-                    else
+                    | true, false ->
+                        MessageBox.ErrorQuery("Error", "Wrong password", "Ok") |> ignore
                         field.Text <- ""
-                        MessageBox.ErrorQuery("Error", "Wrong password", "Ok") |> ignore)
-
+                    | false, true ->
+                        MessageBox.ErrorQuery("Error", "Invalid database schema", "Ok") |> ignore
+                        field.Text <- ""
+                    | false, false ->
+                        MessageBox.ErrorQuery("Error", "Wrong password and invalid database", "Ok") |> ignore
+                        field.Text <- "")
             field
 
         let window =
@@ -129,7 +140,7 @@ module CreateDatabaseWizard =
             if (password.Text = passwordRepeat.Text) then
                 prepareDb (password.Text |> string)
                 wizard.Enabled <- false
-                switchWindow(loginWindow, false, false, false)
+                switchWindow(loginWindow(), false, false, false)
                 MessageBox.Query("Success!", "Successfuly created database", "Ok") |> ignore
             else
                 MessageBox.ErrorQuery("Error", "Passwords do not match", "Ok") |> ignore)

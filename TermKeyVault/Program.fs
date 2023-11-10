@@ -13,7 +13,7 @@ let initApp _ =
 
     match isDbCreated with
     | true -> 
-        Application.Top.Add(loginWindow)
+        Application.Top.Add(loginWindow())
     | false -> 
         showCreateDbWizard ()
 

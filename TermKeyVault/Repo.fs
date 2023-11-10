@@ -10,8 +10,6 @@ let dbPath () =
     let config = Configuration.getConfig ()
     config.DatabasePath
 
-let checkIfDbExists () = File.Exists(dbPath ())
-
 let connectionString (file: string, password: string) =
     sprintf "Data Source=file:%s;Password=%s;" file password
 
@@ -20,10 +18,39 @@ let checkPassword (password: string) =
 
     try
         connection.Open()
+        let tableName = "Records"
+        let commandText = sprintf "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" tableName
+        let command = new SqliteCommand(commandText, connection)
+        let reader = command.ExecuteReader()
+        let tableExists = reader.HasRows
         connection.Close()
         true
     with _ ->
         false
+
+let checkIfDbExists () =
+    let dbPath = dbPath ()
+    if File.Exists(dbPath) && dbPath.EndsWith(".db") then
+        true
+    else
+        false
+
+let checkIfDbIsValid(password: string): bool =
+    use connection = new SqliteConnection(connectionString (dbPath (), password))
+    let isValid = 
+        try
+            connection.Open()
+            let tableName = "Records"
+            let commandText = sprintf "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" tableName
+            let command = new SqliteCommand(commandText, connection)
+            let reader = command.ExecuteReader()
+            reader.HasRows
+        with
+        | _ -> false
+
+    connection.Close()
+    isValid
+
 
 let prepareDb (password: string) =
     let connection = new SqliteConnection(connectionString (dbPath (), password))
@@ -46,6 +73,7 @@ let prepareDb (password: string) =
         command.ExecuteNonQuery() |> ignore
     with _ ->
         ()
+
     connection.Close()
 
 let createRecord (record: Record) =
