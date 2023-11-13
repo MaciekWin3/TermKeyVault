@@ -1,4 +1,4 @@
-﻿# TermKeyVault
+﻿# TermKeyVault 🗝️
 
 Terminal password manager
 

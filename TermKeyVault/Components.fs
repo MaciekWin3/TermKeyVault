@@ -598,13 +598,18 @@ module PasswordGenerator =
 
         generateButton.add_Clicked (fun _ ->
             let password =
-                generatePassword
-                    { Length = 16
-                      Numbers = numbersCheckBox.Checked
-                      Uppercase = uppercaseCheckBox.Checked
-                      Lowercase = lowercaseCheckBox.Checked
-                      Special = specialCheckBox.Checked
-                      ExcludeSimilar = excludeSimilarCheckBox.Checked }
+                try
+                    generatePassword
+                        { Length = 16
+                          Numbers = numbersCheckBox.Checked
+                          Uppercase = uppercaseCheckBox.Checked
+                          Lowercase = lowercaseCheckBox.Checked
+                          Special = specialCheckBox.Checked
+                          ExcludeSimilar = excludeSimilarCheckBox.Checked }
+                with
+                    | _ -> 
+                        MessageBox.ErrorQuery("Error", "Unable to generate password", "Ok") |> ignore
+                        ""
 
             passwordField.Text <- password)
 

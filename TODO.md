@@ -10,12 +10,14 @@
 - [x] Fix initial app setup (it crashes when there is no config file) - verify
 - [x] Another sync issue when adding new item 
 
+## TODOs for 0.1.2 📃
+- [ ] Code cleanup
+- [ ] Better error handling 
+- [ ] Clipboard investigation
+
 ## Future TODOs 📝
 - [ ] Tab to navigate between sections
-- [ ] Clipboard investigation
 - [ ] Add vim like bindings 
-- [ ] Code cleanup
 - [ ] Configure clipboard time and theme by config 
 - [ ] Shortcuts
 - [ ] Copy button in password generator 
-- [ ] Better error handling 
