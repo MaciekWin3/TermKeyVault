@@ -5,8 +5,14 @@ open Repo
 open Orchestrator.LoginWindow
 open Orchestrator.CreateDatabaseWizard
 
+let sqliteSetup() =
+    // TODO: Verify this
+    SQLitePCL.Batteries.Init()
+    SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlcipher())
+
 [<EntryPoint>]
 let initApp _ =
+    sqliteSetup()
     Application.Init()
     Colors.Base <- Colors.TopLevel
     let isDbCreated = checkIfDbExists ()
@@ -20,4 +26,3 @@ let initApp _ =
     Application.Run()
     Application.Shutdown()
     0
-
