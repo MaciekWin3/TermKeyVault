@@ -30,10 +30,34 @@ module Web =
         with ex ->
             raise ex
 
-//module Cache = 
-    
+module Cache =
+    open Microsoft.Extensions.Caching.Memory
+
+    let mutable private cacheInstance = Unchecked.defaultof<IMemoryCache>
+
+    let private initializeCache () =
+        let cacheOptions = MemoryCacheOptions()
+        new MemoryCache(cacheOptions) :> IMemoryCache
+
+    let private getCache () =
+        if cacheInstance = Unchecked.defaultof<IMemoryCache> then
+            cacheInstance <- initializeCache()
+        cacheInstance
+
+    let addValueToCache (key: string, value: string) =
+        let cache = getCache()
+        cache.Set(key, value, DateTimeOffset.Now.AddMonths(12)) |> ignore
+
+    let getValueFromCache (key: string): string option =
+        let cache = getCache()
+
+        match cache.TryGetValue key with
+        | true, value -> Some(value |> string)
+        | _ -> None 
 
 module Configuration =
+    open Terminal.Gui
+
     let createConfigFile () =
         let appDataPath =
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
@@ -112,4 +136,35 @@ module Configuration =
         proc.StartInfo <- psi
 
         proc.Start()
+
+    let showConfig () =
+        let config = getConfig ()
+
+        let appDataPath =
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+
+        let configDir = Path.Combine(appDataPath, "termkeyvault")
+
+        MessageBox.Query(
+            "Config",
+            $"""
+Config localization: {configDir}
+Db path: {config.DatabasePath}
+Create: {config.ShouldCreateDatabase}
+Config: {config.EncryptionKey}
+            """
+        )
+        |> ignore
+
+    let getEncryptionKey () =
+        let config = getConfig ()
+        let key = config.EncryptionKey
+
+        let encryptionKey =
+            match key with
+            | 0 -> 32
+            | key -> key
+
+        encryptionKey
+
 
