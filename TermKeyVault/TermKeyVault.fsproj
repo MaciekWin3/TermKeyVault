@@ -6,7 +6,7 @@
 	  <PackageId>TermKeyVault</PackageId>
 	  <Authors>Maciej Winnik</Authors>
 	  <Description>Terminal password manager</Description>
-	  <PackageVersion>0.1.1</PackageVersion>
+	  <PackageVersion>0.1.2</PackageVersion>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <ProjectURL>https://github.com/MaciekWin3/TermKeyVault</ProjectURL>
 	  <RepositoryURL>https://github.com/MaciekWin3/TermKeyVault</RepositoryURL>
