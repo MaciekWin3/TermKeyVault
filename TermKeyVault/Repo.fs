@@ -112,16 +112,16 @@ let updateRecord (title: string, updatedRecord: Record) =
 
     command.CommandText <-
         sprintf
-            "UPDATE Records
-         SET Title = '%s',
-             Username = '%s',
-             Password = '%s',
-             Url = '%s',
-             Notes = '%s',
-             Category = '%s',
-             CreationDate = '%s',
-             LastModifiedDate = '%s'
-         WHERE Title= '%s'"
+           "UPDATE Records
+            SET Title = '%s',
+            Username = '%s',
+            Password = '%s',
+            Url = '%s',
+            Notes = '%s',
+            Category = '%s',
+            CreationDate = '%s',
+            LastModifiedDate = '%s'
+            WHERE Title= '%s'"
             updatedRecord.Title
             updatedRecord.Username
             updatedRecord.Password
