@@ -1,14 +1,32 @@
 ﻿module Repo
 
-open Types
-open Utils
 open Microsoft.Data.Sqlite
 open System
 open System.IO
 
+open Cryptography
+open Utils
+open Utils.Configuration 
+open Types
+open Terminal.Gui
+
 let dbPath () =
     let config = Configuration.getConfig ()
     config.DatabasePath
+
+let getDbPasswordFromCache() = 
+    let cacheValue = Cache.getValueFromCache("password")
+    if cacheValue.IsNone then
+        (*
+            TODO
+            let password = askForPassword ()
+            Cache.addValueToCache("password", password)
+            password
+        *)
+        MessageBox.ErrorQuery("Error", "Password not found in cache", "Ok") |> ignore
+        ""
+    else
+        xorDecrypt(cacheValue.Value, getEncryptionKey ()) 
 
 let connectionString (file: string, password: string) =
     sprintf "Data Source=file:%s;Password=%s;" file password
@@ -51,7 +69,6 @@ let checkIfDbIsValid(password: string): bool =
     connection.Close()
     isValid
 
-
 let prepareDb (password: string) =
     let connection = new SqliteConnection(connectionString (dbPath (), password))
     connection.Open()
@@ -77,7 +94,7 @@ let prepareDb (password: string) =
     connection.Close()
 
 let createRecord (record: Record) =
-    use connection = new SqliteConnection(connectionString (dbPath (), "test"))
+    use connection = new SqliteConnection(connectionString (dbPath (), getDbPasswordFromCache()))
     connection.Open()
     let command = connection.CreateCommand()
 
@@ -106,7 +123,7 @@ let createRecord (record: Record) =
     connection.Close()
 
 let updateRecord (title: string, updatedRecord: Record) =
-    use connection = new SqliteConnection(connectionString (dbPath (), "test"))
+    use connection = new SqliteConnection(connectionString (dbPath (), getDbPasswordFromCache()))
     connection.Open()
     let command = connection.CreateCommand()
 
@@ -136,7 +153,7 @@ let updateRecord (title: string, updatedRecord: Record) =
     connection.Close()
 
 let getRecords () =
-    let connection = new SqliteConnection(connectionString (dbPath (), "test"))
+    use connection = new SqliteConnection(connectionString (dbPath (), getDbPasswordFromCache()))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- "SELECT * FROM Records"
@@ -171,7 +188,7 @@ let getRecords () =
     records
 
 let getRecordsByCategory (category: string) =
-    let connection = new SqliteConnection(connectionString (dbPath (), "test"))
+    use connection = new SqliteConnection(connectionString (dbPath (), getDbPasswordFromCache()))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "SELECT * FROM Records WHERE Category = '%s'" category
@@ -206,7 +223,7 @@ let getRecordsByCategory (category: string) =
     records
 
 let getRecordByTitle (title: string) : Record option =
-    let connection = new SqliteConnection(connectionString (dbPath (), "test"))
+    use connection = new SqliteConnection(connectionString (dbPath (), getDbPasswordFromCache()))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "SELECT * FROM Records WHERE Title = '%s'" title
@@ -241,7 +258,7 @@ let getRecordByTitle (title: string) : Record option =
     record
 
 let getCategories () =
-    let connection = new SqliteConnection(connectionString (dbPath (), "test"))
+    use connection = new SqliteConnection(connectionString (dbPath (), getDbPasswordFromCache()))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- "SELECT DISTINCT Category FROM Records"
@@ -257,50 +274,9 @@ let getCategories () =
     [ "All" ] @ categories
 
 let deleteRecord (title: string) =
-    let connection = new SqliteConnection(connectionString (dbPath (), "test"))
+    use connection = new SqliteConnection(connectionString (dbPath (), getDbPasswordFromCache()))
     connection.Open()
     let command = connection.CreateCommand()
     command.CommandText <- sprintf "DELETE FROM Records WHERE Title = '%s'" title
     command.ExecuteNonQuery() |> ignore
     connection.Close()
-
-let returnTestData () =
-    let x =
-        { Id = 1
-          Title = "GitHub"
-          Username = "user"
-          Password = "P@ssword"
-          Url = "https://github.com"
-          Notes = "Notes"
-          Category = "Social Media"
-          CreationDate = DateTime.Now
-          LastModifiedDate = DateTime.Now }
-
-    let y =
-        { Id = 2
-          Title = "Facebook"
-          Username = "user"
-          Password = "P@ssword"
-          Url = "https://facebook.com"
-          Notes = "Notes"
-          Category = "Social Media"
-          CreationDate = DateTime.Now
-          LastModifiedDate = DateTime.Now }
-
-    let z =
-        { Id = 3
-          Title = "Twitter"
-          Username = "user"
-          Password = "P@ssword"
-          Url = "https://twitter.com"
-          Notes = "Notes"
-          Category = "Social Media"
-          CreationDate = DateTime.Now
-          LastModifiedDate = DateTime.Now }
-
-    [ x; y; z ]
-
-let insertTestData () =
-    let testData = returnTestData ()
-    testData |> List.iter (fun item -> createRecord (item))
-
