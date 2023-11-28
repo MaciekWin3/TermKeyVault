@@ -215,7 +215,7 @@ module RecordDialog =
 
     let showCreateRecordDialog (r: Record option, dialogType: DialogType, onFinish) =
         let title = if r = None then "Add record" else "Edit record"
-        let dialog = new Dialog(title, 60, 22)
+        let dialog = new Dialog(title, 62, 22)
 
         let record =
             match r with
@@ -270,7 +270,7 @@ module RecordDialog =
         let notesLabel = new Label(Text = "Notes: ", X = 0, Y = Pos.Bottom(urlTextField))
 
         let notesTextField =
-            new TextField(Text = record.Notes, X = 0, Y = Pos.Bottom(notesLabel), Width = Dim.Fill())
+            new TextView(Text = record.Notes, X = 0, Y = Pos.Bottom(notesLabel), Height = 3, Width = Dim.Fill())
 
         let categoryLabel =
             new Label(Text = "Category: ", X = 0, Y = Pos.Bottom(notesTextField))
