@@ -3,6 +3,7 @@
 open Terminal.Gui
 open Components
 open Repo
+open Cryptography
 
 module MainWindow =
     open Categories.CategoryTable
@@ -39,6 +40,8 @@ module ScreenOrchestrator =
 module LoginWindow =
     open ScreenOrchestrator
     open MainWindow
+    open Utils
+    open Utils.Configuration
 
     let loginWindow() =
         let loginLabel =
@@ -65,6 +68,8 @@ module LoginWindow =
 
                     match isValidDb, isValidPassword with
                     | true, true ->
+                        let encryptedPassword =  xorEncrypt (password |> string, getEncryptionKey ())
+                        Cache.addValueToCache("password", encryptedPassword)
                         switchWindow(mainWindow, true, true, true)
                     | true, false ->
                         MessageBox.ErrorQuery("Error", "Wrong password", "Ok") |> ignore

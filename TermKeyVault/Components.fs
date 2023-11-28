@@ -13,42 +13,8 @@ type DialogType =
     | Add
     | Edit
 
-module Config =
-    open Utils.Configuration
-    open System.IO
-
-    let showConfig () =
-        let config = getConfig ()
-
-        let appDataPath =
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
-
-        let configDir = Path.Combine(appDataPath, "termkeyvault")
-
-        MessageBox.Query(
-            "Config",
-            $"""
-Config localization: {configDir}
-Db path: {config.DatabasePath}
-Create: {config.ShouldCreateDatabase}
-Config: {config.EncryptionKey}
-            """
-        )
-        |> ignore
-
-    let getEncryptionKey () =
-        let config = getConfig ()
-        let key = config.EncryptionKey
-
-        let encryptionKey =
-            match key with
-            | 0 -> 32
-            | key -> key
-
-        encryptionKey
-
 module TableDataConversions =
-    open Config
+    open Utils.Configuration
 
     let convertListToDataTableOfRecords (list: List<Record>) =
         let table = new DataTable()
@@ -211,7 +177,7 @@ module DetailsFrame =
         fv
 
 module RecordDialog =
-    open Config
+    open Utils.Configuration
 
     let showCreateRecordDialog (r: Record option, dialogType: DialogType, onFinish) =
         let title = if r = None then "Add record" else "Edit record"
@@ -385,10 +351,9 @@ module InspectDialog =
         | _ -> ()
 
 module RecordTable =
-    open Config
+    open Utils.Configuration
     open ClipboardTimer
     open StatusBar
-    open InspectDialog
     open DetailsFrame
     open Categories.CategoryTable
     open RecordDialog
