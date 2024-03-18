@@ -36,7 +36,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.8" />
-    <PackageReference Include="Terminal.Gui" Version="1.15.1" />
+    <PackageReference Include="Terminal.Gui" Version="1.16.0" />
   </ItemGroup>
 
   <ItemGroup>
