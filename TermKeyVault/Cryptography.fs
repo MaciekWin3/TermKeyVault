@@ -6,6 +6,12 @@ open System
 
 open Types
 
+let private encryptionPrefix = "v2:"
+
+let private getAesKeyBytes (encryptionKey: int) =
+    let keyBytes = Encoding.UTF8.GetBytes(encryptionKey.ToString())
+    SHA256.HashData(keyBytes)
+
 let generateSalt (saltSize: int) =
     let salt = Array.zeroCreate<byte> saltSize
     use rng = RandomNumberGenerator.Create()
@@ -53,18 +59,48 @@ let generatePassword (parameters: PasswordParams) : string =
 
     password
 
-let xorEncrypt (text: string, encryptionKey: int) : string =
-    let encryptedText =
-        [ for i = 0 to text.Length - 1 do
-              let character = text.[i]
-              let encryptedCharCode = int character + encryptionKey
-              let encryptedChar = char encryptedCharCode
-              yield string encryptedChar ]
-        |> String.concat ""
+let private legacyShiftEncrypt (text: string, encryptionKey: int) : string =
+    [ for i = 0 to text.Length - 1 do
+          let character = text.[i]
+          let encryptedCharCode = int character + encryptionKey
+          let encryptedChar = char encryptedCharCode
+          yield string encryptedChar ]
+    |> String.concat ""
 
-    encryptedText
+let xorEncrypt (text: string, encryptionKey: int) : string =
+    if String.IsNullOrEmpty(text) then
+        text
+    else
+        let plainBytes = Encoding.UTF8.GetBytes(text)
+        let encryptedBytes = Array.zeroCreate<byte> plainBytes.Length
+        let tag = Array.zeroCreate<byte> 16
+        let nonce = RandomNumberGenerator.GetBytes(12)
+        let keyBytes = getAesKeyBytes encryptionKey
+
+        use aes = new AesGcm(keyBytes, 16)
+        aes.Encrypt(nonce, plainBytes, encryptedBytes, tag)
+
+        let payload = Array.concat [ nonce; tag; encryptedBytes ]
+        encryptionPrefix + Convert.ToBase64String(payload)
 
 let xorDecrypt (text: string, encryptionKey: int) : string =
-    // TODO: Verify why this is working
-    xorEncrypt (text, -encryptionKey)
+    if String.IsNullOrEmpty(text) then
+        text
+    elif text.StartsWith(encryptionPrefix, StringComparison.Ordinal) then
+        let payload = text.Substring(encryptionPrefix.Length) |> Convert.FromBase64String
+
+        if payload.Length < 28 then
+            failwith "Invalid encrypted payload."
+
+        let nonce = payload.[0..11]
+        let tag = payload.[12..27]
+        let encryptedBytes = payload.[28..]
+        let plainBytes = Array.zeroCreate<byte> encryptedBytes.Length
+        let keyBytes = getAesKeyBytes encryptionKey
+
+        use aes = new AesGcm(keyBytes, 16)
+        aes.Decrypt(nonce, encryptedBytes, tag, plainBytes)
+        Encoding.UTF8.GetString(plainBytes)
+    else
+        legacyShiftEncrypt (text, -encryptionKey)
 
