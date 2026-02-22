@@ -108,7 +108,8 @@ module ClipboardTimer =
 
                 timer.Elapsed.Add(fun _ ->
                     if not newCancellationTokenSource.Token.IsCancellationRequested then
-                        runTimer (timer, statusShortcut, &timeLeftInClipboard, newCancellationTokenSource.Token))
+                        invoke (fun () ->
+                            runTimer (timer, statusShortcut, &timeLeftInClipboard, newCancellationTokenSource.Token)))
 
                 timer.Start()))
 
