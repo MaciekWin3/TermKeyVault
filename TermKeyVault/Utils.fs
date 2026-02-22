@@ -8,6 +8,39 @@ open System
 
 open Types
 
+module AppContext =
+    open Terminal.Gui.App
+    open Terminal.Gui.Time
+
+    let mutable private app: IApplication option = None
+
+    let initialize () =
+        let created = Application.Create(SystemTimeProvider())
+        created.Init(null) |> ignore
+        app <- Some created
+        created
+
+    let getApp () =
+        match app with
+        | Some instance -> instance
+        | None -> failwith "Application context not initialized."
+
+    let clipboard () =
+        (getApp ()).Clipboard
+
+    let invoke action =
+        (getApp ()).Invoke(Action(action))
+
+    let layoutAndDraw force =
+        (getApp ()).LayoutAndDraw(force)
+
+    let run (runnable: IRunnable) =
+        (getApp ()).Run(runnable, null) |> ignore
+
+    let requestStopTop () =
+        let instance = getApp ()
+        instance.RequestStop(instance.TopRunnable)
+
 module Web =
     let openUrl (url: string) =
         try
@@ -56,7 +89,9 @@ module Cache =
         | _ -> None 
 
 module Configuration =
-    open Terminal.Gui
+    open Terminal.Gui.App
+    open Terminal.Gui.Views
+    open AppContext
 
     let createConfigFile () =
         let appDataPath =
@@ -146,6 +181,7 @@ module Configuration =
         let configDir = Path.Combine(appDataPath, "termkeyvault")
 
         MessageBox.Query(
+            getApp (),
             "Config",
             $"""
 Config localization: {configDir}

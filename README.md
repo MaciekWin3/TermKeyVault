@@ -18,7 +18,7 @@ It is by no means secure (although it uses encrypted SQLite database and uses ba
 
 To install whale you need to have the following dependencies installed on your system:
 
-- [.NET](https://dotnet.microsoft.com/download/dotnet/7.0)
+- [.NET](https://dotnet.microsoft.com/download/dotnet/10.0)
 - Modern Terminal - For Windows: [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab)
 
 Once you have the dependencies installed, you can download TermKeyVault using this command:
