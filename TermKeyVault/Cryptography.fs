@@ -87,20 +87,29 @@ let xorDecrypt (text: string, encryptionKey: int) : string =
     if String.IsNullOrEmpty(text) then
         text
     elif text.StartsWith(encryptionPrefix, StringComparison.Ordinal) then
-        let payload = text.Substring(encryptionPrefix.Length) |> Convert.FromBase64String
+        try
+            let payload = text.Substring(encryptionPrefix.Length) |> Convert.FromBase64String
 
-        if payload.Length < 28 then
-            failwith "Invalid encrypted payload."
+            if payload.Length < 28 then
+                // Invalid or truncated payload; return the original text instead of throwing.
+                text
+            else
+                let nonce = payload.[0..11]
+                let tag = payload.[12..27]
+                let encryptedBytes = payload.[28..]
+                let plainBytes = Array.zeroCreate<byte> encryptedBytes.Length
+                let keyBytes = getAesKeyBytes encryptionKey
 
-        let nonce = payload.[0..11]
-        let tag = payload.[12..27]
-        let encryptedBytes = payload.[28..]
-        let plainBytes = Array.zeroCreate<byte> encryptedBytes.Length
-        let keyBytes = getAesKeyBytes encryptionKey
-
-        use aes = new AesGcm(keyBytes, 16)
-        aes.Decrypt(nonce, encryptedBytes, tag, plainBytes)
-        Encoding.UTF8.GetString(plainBytes)
+                use aes = new AesGcm(keyBytes, 16)
+                aes.Decrypt(nonce, encryptedBytes, tag, plainBytes)
+                Encoding.UTF8.GetString(plainBytes)
+        with
+        | :? FormatException
+        | :? CryptographicException
+        | :? ArgumentException ->
+            // Any error during decoding/decryption results in returning the original text
+            // to avoid crashing UI call sites on corrupted/partial data.
+            text
     else
         legacyShiftEncrypt (text, -encryptionKey)
 
