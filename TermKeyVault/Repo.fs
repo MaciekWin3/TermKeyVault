@@ -8,7 +8,8 @@ open Cryptography
 open Utils
 open Utils.Configuration 
 open Types
-open Terminal.Gui
+open Terminal.Gui.App
+open Terminal.Gui.Views
 
 let dbPath () =
     let config = Configuration.getConfig ()
@@ -23,7 +24,7 @@ let getDbPasswordFromCache() =
             Cache.addValueToCache("password", password)
             password
         *)
-        MessageBox.ErrorQuery("Error", "Password not found in cache", "Ok") |> ignore
+        MessageBox.ErrorQuery(AppContext.getApp (), "Error", "Password not found in cache", "OK") |> ignore
         ""
     else
         xorDecrypt(cacheValue.Value, getEncryptionKey ()) 

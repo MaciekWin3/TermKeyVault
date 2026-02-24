@@ -1,13 +1,19 @@
-﻿module Components
+module Components
 
-open Terminal.Gui
+open Terminal.Gui.App
+open Terminal.Gui.Views
+open Terminal.Gui.ViewBase
+open Terminal.Gui.Input
+open Terminal.Gui.Drawing
 open System.Data
 open System
+open System.Drawing
 
 open Types
 open Repo
 open Cryptography
 open Utils
+open Utils.AppContext
 
 type DialogType =
     | Add
@@ -66,31 +72,31 @@ module ClipboardTimer =
         timer.Stop()
         timer.Dispose()
 
-    let runTimer (timer: Timer, statusBar: StatusBar, elapsedTime: byref<float>, _) =
-        Application.Refresh()
+    let runTimer (timer: Timer, statusShortcut: Shortcut, elapsedTime: byref<float>, _) =
+        layoutAndDraw true
         elapsedTime <- elapsedTime + 0.8
 
         let timeString =
             (TimeSpan.FromSeconds(8.0) - TimeSpan.FromSeconds(elapsedTime))
                 .ToString(@"hh\:mm\:ss")
 
-        statusBar.Items.[2].Title <- message timeString
+        statusShortcut.Text <- message timeString
 
         if elapsedTime >= 8.0 then
             resetTimer (timer)
-            Clipboard.TrySetClipboardData("") |> ignore
+            (clipboard ()).TrySetClipboardData("") |> ignore
             elapsedTime <- 0.0
-            statusBar.Items.[2].Title <- ""
-            Application.Refresh()
+            statusShortcut.Text <- ""
+            layoutAndDraw true
             isTimerRunning <- false
 
 
-    let setClipboardTimer (statusBar: StatusBar) =
-        Application.MainLoop.Invoke(fun () ->
+    let setClipboardTimer (statusShortcut: Shortcut) =
+        invoke (fun () ->
             let newCancellationTokenSource = new CancellationTokenSource()
             let timer = new Timer(800.0)
             timer.AutoReset <- true
-            statusBar.Items.[2].Title <- message "00:00:08"
+            statusShortcut.Text <- message "00:00:08"
             let mutable timeLeftInClipboard: float = 0.0
 
             if isTimerRunning then
@@ -102,21 +108,28 @@ module ClipboardTimer =
 
                 timer.Elapsed.Add(fun _ ->
                     if not newCancellationTokenSource.Token.IsCancellationRequested then
-                        runTimer (timer, statusBar, &timeLeftInClipboard, newCancellationTokenSource.Token))
+                        invoke (fun () ->
+                            runTimer (timer, statusShortcut, &timeLeftInClipboard, newCancellationTokenSource.Token)))
 
                 timer.Start()))
 
 module StatusBar =
+    let clipboardStatusShortcut = new Shortcut(Key.Empty, "", (fun () -> ()), "")
+
     let statusBar =
-        let bar = new StatusBar()
+        let clipboardSupport = if (clipboard ()).IsSupported then "Available" else "Unavailable"
 
-        bar.Items <-
-            [|
-               // TODO: Implements ctrl c on quit app from login window
-               new StatusItem(Key.C ||| Key.CtrlMask, "~CTRL-C~ Quit", (fun () -> Application.RequestStop()))
-               new StatusItem(Key.Null, $"OS Clipboard IsSupported : {Clipboard.IsSupported}", null)
-               new StatusItem(Key.CharMask, "", (fun _ -> ())) |]
+        let bar =
+            new StatusBar(
+            [| new Shortcut(Key.C.WithCtrl, "~Ctrl+C~ Quit", (fun () -> requestStopTop ()), "")
+               new Shortcut(Key.Empty, $"Clipboard: {clipboardSupport}", (fun () -> ()), "")
+               clipboardStatusShortcut |]
+            )
 
+        bar.X <- 0
+        bar.Y <- Pos.AnchorEnd(1)
+        bar.Width <- Dim.Fill()
+        bar.Height <- 1
         bar
 
 module Categories =
@@ -134,27 +147,22 @@ module Categories =
             dataTable
 
         let categoryTable =
-            let Win = new Window("Example window for colors")
-
             let table =
                 new TableView(
                     X = 0,
                     Y = 0,
-                    Width = Dim.Percent(25f),
-                    Height = Dim.Percent(70f),
-                    FullRowSelect = true,
-                    ColorScheme =
-                        new ColorScheme(
-                            HotNormal = Win.ColorScheme.HotNormal,
-                            Focus = Win.ColorScheme.Focus,
-                            HotFocus = Attribute.Make(Color.Blue, Color.Gray),
-                            Disabled = Win.ColorScheme.Disabled,
-                            Normal = Win.ColorScheme.Normal
-                        )
+                    Width = Dim.Percent(25),
+                    Height = Dim.Percent(70),
+                    FullRowSelect = true
                 )
 
             table.Style.AlwaysShowHeaders <- true
-            table.Table <- convertListToDataTableOfCategories (Repo.getCategories ())
+            table.Style.ShowVerticalCellLines <- true
+            table.Style.ShowVerticalHeaderLines <- true
+            table.Style.ShowHorizontalHeaderOverline <- true
+            table.Style.ShowHorizontalHeaderUnderline <- true
+            table.Style.ShowHorizontalBottomline <- true
+            table.Table <- DataTableSource(convertListToDataTableOfCategories (Repo.getCategories ()))
             table
 
 module DetailsFrame =
@@ -165,23 +173,21 @@ module DetailsFrame =
             new TextView(X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(), ReadOnly = true)
 
         tv.WordWrap <- true
-        tv.DesiredCursorVisibility <- CursorVisibility.Invisible
-        tv.ColorScheme <- Colors.Menu
         tv
 
     let frameView =
         let fv =
-            new FrameView(X = 0, Y = Pos.Bottom(categoryTable), Width = Dim.Fill(), Height = Dim.Fill())
+            new FrameView(Title = "Details", X = 0, Y = Pos.Bottom(categoryTable), Width = Dim.Fill(), Height = Dim.Fill())
 
-        fv.Add(textFieldDetails)
+        fv.Add(textFieldDetails) |> ignore
         fv
 
 module RecordDialog =
     open Utils.Configuration
 
     let showCreateRecordDialog (r: Record option, dialogType: DialogType, onFinish) =
-        let title = if r = None then "Add record" else "Edit record"
-        let dialog = new Dialog(title, 62, 22)
+        let title = if r = None then "Add Record" else "Edit Record"
+        let dialog = new Dialog(Title = title, Width = 62, Height = 22)
 
         let record =
             match r with
@@ -241,19 +247,14 @@ module RecordDialog =
         let categoryLabel =
             new Label(Text = "Category: ", X = 0, Y = Pos.Bottom(notesTextField))
 
-        let categoryComboBox: ComboBox =
-            let cb =
-                new ComboBox(X = 0, Y = Pos.Bottom(categoryLabel), Width = Dim.Fill(), Height = Dim.Fill(1))
+        let categoryTextField =
+            let initialCategory =
+                if dialogType = DialogType.Edit then
+                    record.Category
+                else
+                    ""
 
-            let categories = Repo.getCategories () |> List.toArray |> Array.filter ((<>) "All")
-
-            cb.SetSource(categories)
-
-            if dialogType = DialogType.Edit then
-                let index = Array.findIndex ((=) record.Category) categories
-                cb.SelectedItem <- index
-
-            cb
+            new TextField(Text = initialCategory, X = 0, Y = Pos.Bottom(categoryLabel), Width = Dim.Fill())
 
         dialog.Add(
             titleLabel,
@@ -269,7 +270,7 @@ module RecordDialog =
             notesLabel,
             notesTextField,
             categoryLabel,
-            categoryComboBox
+            categoryTextField
         )
 
         // TODO: make better validation
@@ -277,8 +278,8 @@ module RecordDialog =
             password = confirmation
 
         (* Exit button *)
-        let exitButton = new Button("Exit", true)
-        exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
+        let exitButton = new Button(Text = "Cancel")
+        exitButton.add_Accepted (fun _ _ -> dialog.RequestStop())
 
         (* Action button *)
         let actionButtonTitle =
@@ -286,9 +287,9 @@ module RecordDialog =
             | Add -> "Create"
             | Edit -> "Update"
 
-        let actionButton = new Button(actionButtonTitle, true)
+        let actionButton = new Button(Text = actionButtonTitle, IsDefault = true)
 
-        actionButton.add_Clicked (fun _ ->
+        actionButton.add_Accepted (fun _ _ ->
             match validate (passwordTextField.Text |> string, confirmPasswordTextField.Text |> string) with
             | true ->
                 let enteredPassword = passwordTextField.Text
@@ -305,7 +306,7 @@ module RecordDialog =
                         Password = encryptedPassword
                         Url = urlTextField.Text |> string
                         Notes = notesTextField.Text |> string
-                        Category = categoryComboBox.SearchText |> string
+                        Category = categoryTextField.Text |> string
                         CreationDate = DateTime.Now
                         LastModifiedDate = DateTime.Now }
 
@@ -314,13 +315,13 @@ module RecordDialog =
                 | Edit -> updateRecord (record.Title, updatedRecord)
 
                 onFinish ()
-                Application.RequestStop(dialog)
-            | false -> MessageBox.ErrorQuery("Error", "Passwords do not match", "Ok") |> ignore)
+                dialog.RequestStop()
+            | false -> MessageBox.ErrorQuery(getApp (), "Error", "Passwords do not match.", "OK") |> ignore)
 
         dialog.AddButton(actionButton)
         dialog.AddButton(exitButton)
-        titleTextField.SetFocus()
-        Application.Run(dialog)
+        titleTextField.SetFocus() |> ignore
+        run dialog
 
 module InspectDialog =
     open RecordDialog
@@ -337,9 +338,9 @@ module InspectDialog =
 
         categoryTable.SetSelection(0, categoryRow, false)
 
-    let action (e: TableView.CellActivatedEventArgs) =
+    let action (e: CellActivatedEventArgs) =
         let recordRow = e.Row
-        let name = e.Table.Rows.[recordRow].[0]
+        let name = e.Table.[recordRow, 0]
 
         match name with
         | :? string as str ->
@@ -383,154 +384,137 @@ module RecordTable =
         table
 
     let recordTable =
-        let Win = new Window("Example window for colors")
-
         let table =
             new TableView(
                 X = Pos.Right(categoryTable),
                 Y = 0,
-                Width = Dim.Percent(75f),
-                Height = Dim.Percent(70f),
-                FullRowSelect = true,
-                ColorScheme =
-                    new ColorScheme(
-                        HotNormal = Win.ColorScheme.HotNormal,
-                        Focus = Win.ColorScheme.Focus,
-                        HotFocus = Attribute.Make(Color.Blue, Color.Gray),
-                        Disabled = Win.ColorScheme.Disabled,
-                        Normal = Win.ColorScheme.Normal
-                    )
+                Width = Dim.Percent(75),
+                Height = Dim.Percent(70),
+                FullRowSelect = true
             )
 
         let refreshTables () =
-            let category = string categoryTable.Table.Rows.[categoryTable.SelectedRow].[0]
-            categoryTable.Table <- convertListToDataTableOfCategories (Repo.getCategories ())
+            let category = string categoryTable.Table.[categoryTable.SelectedRow, 0]
+            categoryTable.Table <- DataTableSource(convertListToDataTableOfCategories (Repo.getCategories ()))
 
             if category <> "All" then
-                table.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
+                table.Table <- DataTableSource(convertListToDataTableOfRecords (Repo.getRecordsByCategory (category)))
             else
-                table.Table <- convertListToDataTableOfRecords (Repo.getRecords ())
+                table.Table <- DataTableSource(convertListToDataTableOfRecords (Repo.getRecords ()))
 
         let copyPasswordToClipboard (record: Record) =
             let preparedPassword = xorDecrypt (record.Password |> string, getEncryptionKey ())
-            let isCopingSuccessfull = Clipboard.TrySetClipboardData(preparedPassword)
+            let isCopingSuccessfull = (clipboard ()).TrySetClipboardData(preparedPassword)
 
             match isCopingSuccessfull with
-            | true -> setClipboardTimer (statusBar) |> ignore
-            | false -> MessageBox.ErrorQuery("Clipboard", "Failed to copy to clipboard") |> ignore
-
-        let showContextMenu (screenPoint: Point, record: Record, deleteMethod) =
-            let contextMenu =
-                new ContextMenu(
-                    screenPoint.X,
-                    screenPoint.Y,
-                    MenuBarItem(
-                        "File",
-                        [| MenuItem("Copy", "Copy password to clipboard", (fun () -> copyPasswordToClipboard (record)))
-                           MenuItem(
-                               "Edit",
-                               "Edit record",
-                               (fun () ->
-                                   showCreateRecordDialog (Some record, DialogType.Edit, (fun () -> refreshTables ())))
-                           )
-                           MenuItem("Delete", "Delete record", (fun () -> deleteMethod (record.Title))) |]
-                    )
-                )
-
-            contextMenu.Show()
+            | true -> setClipboardTimer (clipboardStatusShortcut) |> ignore
+            | false -> MessageBox.ErrorQuery(getApp (), "Clipboard", "Failed to copy to clipboard.", "OK") |> ignore
 
         let deleteItem (title: string) =
             let decision =
-                MessageBox.Query("Delete", "Are you sure you want to delete this item?", "Yes", "No")
+                MessageBox.Query(getApp (), "Delete", "Are you sure you want to delete this record?", "Yes", "No")
 
-            if decision = 0 then
+            if decision.HasValue && decision.Value = 0 then
                 Repo.deleteRecord (title)
                 refreshTables ()
 
+        let showContextMenu (screenPoint: Point, record: Record) =
+            let contextItems: View array =
+                [| new MenuItem("Copy Password", "Copy password to clipboard", (fun () -> copyPasswordToClipboard (record)), Key.Empty)
+                   :> View
+                   new MenuItem(
+                       "Edit",
+                       "Edit selected record",
+                       (fun () -> showCreateRecordDialog (Some record, DialogType.Edit, (fun () -> refreshTables ()))),
+                       Key.Empty
+                   )
+                   :> View
+                   new MenuItem("Delete", "Delete selected record", (fun () -> deleteItem (record.Title)), Key.Empty)
+                   :> View |]
+
+            let popover = new PopoverMenu(contextItems)
+            (getApp ()).Popover.Register(popover) |> ignore
+            popover.MakeVisible(screenPoint)
+
         let records = Repo.getRecords ()
         table.Style.AlwaysShowHeaders <- true
-        table.Table <- convertListToDataTableOfRecords (records)
+        table.Style.ShowVerticalCellLines <- true
+        table.Style.ShowVerticalHeaderLines <- true
+        table.Style.ShowHorizontalHeaderOverline <- true
+        table.Style.ShowHorizontalHeaderUnderline <- true
+        table.Style.ShowHorizontalBottomline <- true
+        table.Table <- DataTableSource(convertListToDataTableOfRecords (records))
 
-        table.add_CellActivated (fun (e) -> 
-            let recordRow = table.SelectedRow
-            let name = table.Table.Rows.[recordRow].[0]
-            let point = Point(table.Frame.X + 5, table.Frame.Y + 5)
+        table.add_CellActivated (fun _ (e: CellActivatedEventArgs) ->
+            let name = e.Table.[e.Row, 0]
             match name with
             | :? string as str ->
                 let record = Repo.getRecordByTitle (str)
 
                 match record with
-                | Some record -> showContextMenu (point, record, deleteItem)
-                | None -> MessageBox.ErrorQuery("Error", "Unable to show context menu", "Ok") |> ignore
-            | _ -> MessageBox.ErrorQuery("Error", "Unabale to find given record", "Ok") |> ignore)
+                | Some record -> showCreateRecordDialog (Some record, DialogType.Edit, (fun () -> refreshTables ()))
+                | None -> MessageBox.ErrorQuery(getApp (), "Error", "Unable to open selected record.", "OK") |> ignore
+            | _ -> MessageBox.ErrorQuery(getApp (), "Error", "Unable to find selected record.", "OK") |> ignore)
 
-        table.add_MouseClick (fun e ->
-            if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) then
-                e.Handled <- true
-                let cell = table.ScreenToCell(e.MouseEvent.X, e.MouseEvent.Y)
-
-                if cell.HasValue then
-                    table.SetSelection(1, cell.Value.Y, false)
-                    let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                    let record = Repo.getRecordByTitle (title)
-
-                    match record with
-                    | Some record ->
-                        showContextMenu (
-                            Point(e.MouseEvent.X + table.Frame.X + 2, e.MouseEvent.Y + table.Frame.Y + 2),
-                            record,
-                            deleteItem
-                        )
-
-                    | None -> 
-                        MessageBox.ErrorQuery("Error", "Unable to show context menu", "Ok") |> ignore)
-
-        
-        table.add_MouseClick (fun e ->
-            if (e.MouseEvent.Flags.HasFlag(MouseFlags.Button1DoubleClicked)) then
-                e.Handled <- true
-                let cell = table.ScreenToCell(e.MouseEvent.X, e.MouseEvent.Y)
+        table.add_MouseEvent (fun _ (mouse: Mouse) ->
+            if mouse.Flags.HasFlag(MouseFlags.RightButtonClicked) || mouse.Flags.HasFlag(MouseFlags.RightButtonPressed) then
+                mouse.Handled <- true
+                let cell = table.ScreenToCell(mouse.ScreenPosition)
 
                 if cell.HasValue then
-                    table.SetSelection(1, cell.Value.Y, false)
-                    let point = Point(table.Frame.X + 5, table.Frame.Y + 5)
-                    let title = string table.Table.Rows[e.MouseEvent.Y - 3].[0]
-                    let record = Repo.getRecordByTitle (title)
-                    match record with
-                    | Some record -> copyPasswordToClipboard (record)
-                    | None -> MessageBox.ErrorQuery("Error", "Unable to copy password to clipboard", "Ok") |> ignore)
+                    let row = cell.Value.Y
 
-        table.add_SelectedCellChanged (fun e ->
+                    if row >= 0 && row < table.Table.Rows then
+                        table.SetSelection(0, row, false)
+                        let title = string table.Table.[row, 0]
+
+                        match Repo.getRecordByTitle (title) with
+                        | Some record ->
+                            let screenPoint = Point(mouse.ScreenPosition.X, mouse.ScreenPosition.Y)
+                            showContextMenu (screenPoint, record)
+                        | None ->
+                            MessageBox.ErrorQuery(getApp (), "Error", "Unable to show context menu.", "OK")
+                            |> ignore)
+
+        table.add_SelectedCellChanged (fun _ (e: SelectedCellChangedEventArgs) ->
             let row = e.NewRow
 
             if row < 0 then
                 textFieldDetails.Text <- ""
             else
-                let title = e.Table.Rows[row][0]
-                let username = e.Table.Rows[row][1]
-                let password = e.Table.Rows[row][2]
-                let category = e.Table.Rows[row][3]
-                let url = e.Table.Rows[row][4]
-                let notes = e.Table.Rows[row][5]
+                let title = e.Table.[row, 0]
+                let username = e.Table.[row, 1]
+                let password = e.Table.[row, 2]
+                let category = e.Table.[row, 3]
+                let url = e.Table.[row, 4]
+                let notes = e.Table.[row, 5]
 
                 let text =
-                    $"Title: {title}, User Name: {username}, Password: {password}, Category: {category}, Url: {url}, Notes: {notes}"
+                    $"Title: {title}\nUsername: {username}\nPassword: {password}\nCategory: {category}\nUrl: {url}\nNotes: {notes}"
 
                 textFieldDetails.Text <- text)
+
+        table.add_Accepted (fun _ _ ->
+            let row = table.SelectedRow
+            if row >= 0 then
+                let title = table.Table.[row, 0] |> string
+                match Repo.getRecordByTitle title with
+                | Some record -> copyPasswordToClipboard record
+                | None -> ())
 
         table
 
     let refreshTables () =
-        let category = string categoryTable.Table.Rows.[categoryTable.SelectedRow].[0]
-        categoryTable.Table <- convertListToDataTableOfCategories (Repo.getCategories ())
+        let category = string categoryTable.Table.[categoryTable.SelectedRow, 0]
+        categoryTable.Table <- DataTableSource(convertListToDataTableOfCategories (Repo.getCategories ()))
         if category <> "All" then
-            recordTable.Table <- convertListToDataTableOfRecords (Repo.getRecordsByCategory (category))
+            recordTable.Table <- DataTableSource(convertListToDataTableOfRecords (Repo.getRecordsByCategory (category)))
         else
-            recordTable.Table <- convertListToDataTableOfRecords (Repo.getRecords ())
+            recordTable.Table <- DataTableSource(convertListToDataTableOfRecords (Repo.getRecords ()))
 
 module PasswordGenerator =
     let openPasswordGeneratorDialog () =
-        let dialog = new Dialog("Password generator", 60, 20)
+        let dialog = new Dialog(Title = "Password Generator", Width = 60, Height = 20)
 
         let password =
             generatePassword
@@ -545,36 +529,36 @@ module PasswordGenerator =
             new TextField(Text = password, X = 0, Y = 1, Width = Dim.Fill(), ReadOnly = true)
 
         let numbersCheckBox =
-            new CheckBox(s = "Allow numbers", X = 0, Y = Pos.Bottom(passwordField), Checked = true)
+            new CheckBox(Text = "Allow numbers", X = 0, Y = Pos.Bottom(passwordField), Value = CheckState.Checked)
 
         let uppercaseCheckBox =
-            new CheckBox(s = "Allow uppercase", X = 0, Y = Pos.Bottom(numbersCheckBox), Checked = true)
+            new CheckBox(Text = "Allow uppercase", X = 0, Y = Pos.Bottom(numbersCheckBox), Value = CheckState.Checked)
 
         let lowercaseCheckBox =
-            new CheckBox(s = "Allow lowercase", X = 0, Y = Pos.Bottom(uppercaseCheckBox), Checked = true)
+            new CheckBox(Text = "Allow lowercase", X = 0, Y = Pos.Bottom(uppercaseCheckBox), Value = CheckState.Checked)
 
         let specialCheckBox =
-            new CheckBox(s = "Allow special characters", X = 0, Y = Pos.Bottom(lowercaseCheckBox), Checked = true)
+            new CheckBox(Text = "Allow special characters", X = 0, Y = Pos.Bottom(lowercaseCheckBox), Value = CheckState.Checked)
 
         let excludeSimilarCheckBox =
-            new CheckBox(s = "Exclude similar characters", X = 0, Y = Pos.Bottom(specialCheckBox), Checked = true)
+            new CheckBox(Text = "Exclude similar characters", X = 0, Y = Pos.Bottom(specialCheckBox), Value = CheckState.Checked)
 
-        let generateButton = new Button("Generate", true)
+        let generateButton = new Button(Text = "Regenerate", IsDefault = true)
 
-        generateButton.add_Clicked (fun _ ->
+        generateButton.add_Accepted (fun _ _ ->
             let password =
                 generatePassword
                     { Length = 16
-                      Numbers = numbersCheckBox.Checked
-                      Uppercase = uppercaseCheckBox.Checked
-                      Lowercase = lowercaseCheckBox.Checked
-                      Special = specialCheckBox.Checked
-                      ExcludeSimilar = excludeSimilarCheckBox.Checked }
+                      Numbers = numbersCheckBox.Value = CheckState.Checked
+                      Uppercase = uppercaseCheckBox.Value = CheckState.Checked
+                      Lowercase = lowercaseCheckBox.Value = CheckState.Checked
+                      Special = specialCheckBox.Value = CheckState.Checked
+                      ExcludeSimilar = excludeSimilarCheckBox.Value = CheckState.Checked }
 
             passwordField.Text <- password)
 
-        let exitButton = new Button("Exit", true)
-        exitButton.add_Clicked (fun _ -> Application.RequestStop(dialog))
+        let exitButton = new Button(Text = "Close")
+        exitButton.add_Accepted (fun _ _ -> dialog.RequestStop())
 
         dialog.Add(
             passwordField,
@@ -587,7 +571,7 @@ module PasswordGenerator =
 
         dialog.AddButton generateButton
         dialog.AddButton exitButton
-        Application.Run dialog
+        run dialog
 
 module Navbar =
     open System.Text
@@ -596,9 +580,11 @@ module Navbar =
     open Categories.CategoryTable
     open RecordTable
 
+    let mutable private menuPopoversRegistered = false
+
     let showAsciiArt () =
         let sb = new StringBuilder()
-        sb.AppendLine ("Simple TUI password manager") |> ignore
+        sb.AppendLine ("Simple terminal password manager") |> ignore
         sb.AppendLine ("") |> ignore
         sb.AppendLine("  _______ _  ___      __ ") |> ignore
         sb.AppendLine(" |__   __| |/ \ \    / / ") |> ignore
@@ -610,47 +596,63 @@ module Navbar =
         sb.AppendLine("") |> ignore
         sb.AppendLine("https://github.com/MaciekWin3/TermKeyVault") |> ignore
         sb.ToString() |> ignore
-        MessageBox.Query("About TermKeyVault", sb.ToString(), "Ok") |> ignore
+        MessageBox.Query(getApp (), "About TermKeyVault", sb.ToString(), "OK") |> ignore
 
 
     let menu =
-        new MenuBar(
-            [| MenuBarItem(
-                   "App",
-                   [| MenuItem("Config", "Show config file", (fun () -> Configuration.openConfigFile () |> ignore))
-                      MenuItem("Quit", "Quit application", (fun () -> Application.RequestStop())) |]
+        let appItems: View array =
+            [| new MenuItem("Open Config", "Open config file", (fun () -> Configuration.openConfigFile () |> ignore), Key.Empty)
+               :> View
+               new MenuItem("Quit", "Quit application", (fun () -> requestStopTop ()), Key.Empty)
+               :> View |]
+
+        let toolsItems: View array =
+            [| new MenuItem("Password Generator", "Generate new password", (fun () -> openPasswordGeneratorDialog ()), Key.Empty)
+               :> View |]
+
+        let recordItems: View array =
+            [| new MenuItem("Add", "Add new record", (fun () -> showCreateRecordDialog (None, DialogType.Add, refreshTables)), Key.Empty)
+               :> View |]
+
+        let helpItems: View array =
+            [| new MenuItem("About", "Info about app", (fun () -> showAsciiArt ()), Key.Empty) :> View
+               new MenuItem(
+                   "Website",
+                   "Project repo",
+                   (fun () ->
+                       try
+                           Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault") |> ignore
+                       with _ ->
+                           MessageBox.ErrorQuery(getApp (), "Error opening website", "Cannot open URL.", "OK")
+                           |> ignore),
+                   Key.Empty
                )
-               MenuBarItem(
-                   "Tools",
-                   [| MenuItem(
-                          "Password generator",
-                          "Generate new password",
-                          (fun () -> openPasswordGeneratorDialog ())
-                      ) |]
-               )
-               MenuBarItem(
-                   "Records",
-                   [| MenuItem(
-                          "Add",
-                          "Adds new record",
-                          (fun () -> showCreateRecordDialog (None, DialogType.Add, refreshTables))
-                      ) |]
-               )
-               MenuBarItem(
-                   "Help",
-                   [| MenuItem("About", "Info about app", (fun () -> showAsciiArt ()))
-                      MenuItem(
-                          "Website",
-                          "Project repo",
-                          (fun () ->
-                              try
-                                  Web.openUrl ("https://github.com/MaciekWin3/TermKeyVault") |> ignore
-                              with _ ->
-                                  MessageBox.ErrorQuery("Error opening website", "Cannot open url", "Ok")
-                                  |> ignore)
-                      ) |]
-               ) |]
-        )
+               :> View |]
+
+        let bar =
+            new MenuBar(
+            [| new MenuBarItem("App", appItems)
+               new MenuBarItem("Tools", toolsItems)
+               new MenuBarItem("Records", recordItems)
+               new MenuBarItem("Help", helpItems) |]
+            )
+
+        bar.X <- 0
+        bar.Y <- 0
+        bar.Width <- Dim.Fill()
+        bar.Height <- 1
+        bar
+
+    let ensureMenuPopoversRegistered () =
+        if not menuPopoversRegistered then
+            menu.SubViews
+            |> Seq.iter (fun item ->
+                match item with
+                | :? MenuBarItem as menuItem when not (isNull menuItem.PopoverMenu) ->
+                    (getApp ()).Popover.Register(menuItem.PopoverMenu) |> ignore
+                | _ -> ())
+
+            menuPopoversRegistered <- true
 
     let updateRecordTable (name: string) =
         let records =
@@ -658,10 +660,11 @@ module Navbar =
             | "All" -> Repo.getRecords ()
             | _ -> Repo.getRecordsByCategory name
 
-        recordTable.Table <- records |> convertListToDataTableOfRecords
+        recordTable.Table <- records |> convertListToDataTableOfRecords |> DataTableSource
 
-    categoryTable.add_SelectedCellChanged (fun e ->
+    categoryTable.add_SelectedCellChanged (fun _ (e: SelectedCellChangedEventArgs) ->
         let row = e.NewRow
-        let name = e.Table.Rows[row][0] |> string
-        updateRecordTable name)
+        if row >= 0 then
+            let name = e.Table.[row, 0] |> string
+            updateRecordTable name)
 

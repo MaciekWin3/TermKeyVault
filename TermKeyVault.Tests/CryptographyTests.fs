@@ -37,6 +37,7 @@ let ShouldEncryptText () =
     // Assert
     encryptedText |> should not' (equal null)
     encryptedText |> should not' (equal text)
+    encryptedText.StartsWith("v2:") |> should equal true
 
 [<Test>]
 let ShouldDecryptEncryptedText () =
@@ -51,6 +52,26 @@ let ShouldDecryptEncryptedText () =
     // Assert
     encryptedText |> should not' (equal null)
     encryptedText |> should not' (equal text)
+    decryptedText |> should equal text
+
+[<Test>]
+let ShouldDecryptLegacyEncryptedText () =
+    // Arrange
+    let text = "Hello World"
+    let encryptionKey = 10
+
+    let legacyEncryptedText =
+        [ for i = 0 to text.Length - 1 do
+              let character = text.[i]
+              let encryptedCharCode = int character + encryptionKey
+              let encryptedChar = char encryptedCharCode
+              yield string encryptedChar ]
+        |> String.concat ""
+
+    // Act
+    let decryptedText = xorDecrypt(legacyEncryptedText, encryptionKey)
+
+    // Assert
     decryptedText |> should equal text
 
 

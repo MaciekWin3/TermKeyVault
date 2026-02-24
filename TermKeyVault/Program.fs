@@ -1,9 +1,12 @@
-﻿module Program
+module Program
 
-open Terminal.Gui
+open Terminal.Gui.App
+open Terminal.Gui.Views
 open Repo
+open Utils.AppContext
 open Orchestrator.LoginWindow
 open Orchestrator.CreateDatabaseWizard
+open Orchestrator.ScreenOrchestrator
 
 let setupSQLite() =
     SQLitePCL.Batteries.Init()
@@ -13,16 +16,14 @@ let setupSQLite() =
 let initApp _ =
     setupSQLite()
 
-    Application.Init()
-    Colors.Base <- Colors.TopLevel
+    let app = initialize ()
     let isDbCreated = checkIfDbExists ()
 
     match isDbCreated with
     | true -> 
-        Application.Top.Add(loginWindow())
+        appRoot.Add(loginWindow()) |> ignore
     | false -> 
         showCreateDbWizard ()
 
-    Application.Run()
-    Application.Shutdown()
+    app.Run(appRoot, null) |> ignore
     0
